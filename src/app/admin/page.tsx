@@ -6,9 +6,7 @@ import { Users, Database, Star, Trophy, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ExportDataButton from "@/components/admin/ExportDataButton";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "humbertolandero78@gmail.com";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,10 +15,14 @@ export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
 
   // Protección de ruta para el creador
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "humbertolandero78@gmail.com";
   if (session?.user?.email !== ADMIN_EMAIL) {
     redirect('/');
   }
+
+  // Inicializar cliente dentro de la función para asegurar lectura de env vars en runtime
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   // Fetch all users with error logging
   const { data: profiles, error: profilesError } = await supabase
@@ -39,6 +41,23 @@ export default async function AdminDashboard() {
     
   if (stickersError) {
     console.error("Admin Dashboard: Error fetching stickers", stickersError);
+  }
+
+  // Si hay error crítico, mostrar mensaje en pantalla
+  if (profilesError || !profiles) {
+    return (
+      <div className="min-h-screen bg-[#F4F4F4] p-8 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-3xl shadow-xl border-2 border-red-500 max-w-md text-center">
+          <h1 className="text-2xl font-black text-red-600 mb-4 uppercase">Error de Conexión</h1>
+          <p className="text-[#474A4A] font-bold mb-6">
+            No se pudo conectar con la base de datos. Verifica que la variable <code className="bg-gray-100 px-2 py-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> esté configurada en Vercel.
+          </p>
+          <Link href="/" className="bg-[#2A398D] text-white px-6 py-3 rounded-xl font-bold uppercase text-sm">
+            Volver al Inicio
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // Stats calculation
