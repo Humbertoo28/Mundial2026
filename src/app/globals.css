@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
+/* ============================================
+   PANINI WORLD CUP 2026 TRACKER - DESIGN SYSTEM
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand Colors - LIGHT */
+  --color-bg:        #D1D4D1;  /* Fondo general */
+  --color-navy:      #2A398D;  /* Azul oficial */
+  --color-green:     #3CAC3B;  /* Verde oficial */
+  --color-red:       #E61D25;  /* Rojo oficial */
+  --color-dark:      #474A4A;  /* Texto principal */
+  --color-white:     #FFFFFF;
+  --color-card-bg:   #FFFFFF;
+  --color-border:    rgba(71, 74, 74, 0.15);
+  --color-input-bg:  rgba(209, 212, 209, 0.3);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --color-bg:        #1A1A1A;  /* Fondo general oscuro */
+  --color-navy:      #4C5DBB;  /* Azul un poco más claro para contraste */
+  --color-green:     #4ADE80;  /* Verde más brillante */
+  --color-red:       #F87171;  /* Rojo más suave */
+  --color-dark:      #FFFFFF;  /* Texto principal BLANCO */
+  --color-white:     #FFFFFF;  /* ESTE ERA EL ERROR - EL BLANCO SIEMPRE DEBE SER BLANCO */
+  --color-card-bg:   #262626;  /* Fondo de tarjeta oscuro */
+  --color-border:    rgba(255, 255, 255, 0.1);
+  --color-input-bg:  rgba(255, 255, 255, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Remove dark mode override – we always use the World Cup palette */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-dark);
+  font-family: 'Inter', 'Segoe UI', Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Selection color ---- */
+::selection {
+  background-color: var(--color-navy);
+  color: #fff;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-navy); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-green); }
+
+/* ---- Hide scrollbar utility ---- */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- Input / Select reset ---- */
+input, select, textarea {
+  color: var(--color-dark);
+}
+
+/* ---- Animate-in helpers (basic) ---- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease both;
 }
