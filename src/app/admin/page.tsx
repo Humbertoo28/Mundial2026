@@ -19,28 +19,48 @@ export default async function AdminDashboard() {
     redirect('/');
   }
 
-  // Inicializar cliente dentro de la función para asegurar lectura de env vars en runtime
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  // Inicializar variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  
+  let profiles: any[] | null = null;
+  let profilesError: any = null;
+  let allUserStickers: any[] | null = null;
+  let stickersError: any = null;
 
-  // Fetch all users with error logging
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, username, email, avatar_url, created_at')
-    .order('created_at', { ascending: false });
+  try {
+    // Si faltan las variables, no intentar conectarse para no crashear (luego mostramos el error rojo)
+    if (supabaseUrl && supabaseServiceKey) {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  if (profilesError) {
-    console.error("Admin Dashboard: Error fetching profiles", profilesError);
-  }
+      // Fetch all users with error logging
+      const profilesResult = await supabase
+        .from('profiles')
+        .select('id, username, email, avatar_url, created_at')
+        .order('created_at', { ascending: false });
+        
+      profiles = profilesResult.data;
+      profilesError = profilesResult.error;
 
-  // Fetch all user stickers to calculate progress
-  const { data: allUserStickers, error: stickersError } = await supabase
-    .from('user_stickers')
-    .select('user_id, quantity');
-    
-  if (stickersError) {
-    console.error("Admin Dashboard: Error fetching stickers", stickersError);
+      if (profilesError) {
+        console.error("Admin Dashboard: Error fetching profiles", profilesError);
+      }
+
+      // Fetch all user stickers to calculate progress
+      const stickersResult = await supabase
+        .from('user_stickers')
+        .select('user_id, quantity');
+        
+      allUserStickers = stickersResult.data;
+      stickersError = stickersResult.error;
+        
+      if (stickersError) {
+        console.error("Admin Dashboard: Error fetching stickers", stickersError);
+      }
+    }
+  } catch (err: any) {
+    console.error("Admin Dashboard: Critical Error", err);
+    profilesError = err;
   }
 
   // Si hay error crítico, mostrar mensaje en pantalla detallado
