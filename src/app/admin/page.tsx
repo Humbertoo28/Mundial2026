@@ -43,16 +43,35 @@ export default async function AdminDashboard() {
     console.error("Admin Dashboard: Error fetching stickers", stickersError);
   }
 
-  // Si hay error crítico, mostrar mensaje en pantalla
+  // Si hay error crítico, mostrar mensaje en pantalla detallado
   if (profilesError || !profiles) {
+    const isMissingUrl = !supabaseUrl;
+    const isMissingKey = !supabaseServiceKey;
+    
     return (
       <div className="min-h-screen bg-[#F4F4F4] p-8 flex items-center justify-center">
         <div className="bg-white p-8 rounded-3xl shadow-xl border-2 border-red-500 max-w-md text-center">
-          <h1 className="text-2xl font-black text-red-600 mb-4 uppercase">Error de Conexión</h1>
-          <p className="text-[#474A4A] font-bold mb-6">
-            No se pudo conectar con la base de datos. Verifica que la variable <code className="bg-gray-100 px-2 py-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> esté configurada en Vercel.
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Database className="text-red-600 h-8 w-8" />
+          </div>
+          <h1 className="text-2xl font-black text-red-600 mb-4 uppercase">Error de Configuración</h1>
+          <div className="text-[#474A4A] font-bold mb-6 text-sm text-left space-y-2">
+            <p className={isMissingUrl ? "text-red-500" : "text-green-600"}>
+              {isMissingUrl ? "❌ Falta NEXT_PUBLIC_SUPABASE_URL" : "✅ URL configurada"}
+            </p>
+            <p className={isMissingKey ? "text-red-500" : "text-green-600"}>
+              {isMissingKey ? "❌ Falta SUPABASE_SERVICE_ROLE_KEY" : "✅ Key configurada"}
+            </p>
+            {profilesError && (
+              <p className="text-red-500 mt-4 p-2 bg-red-50 rounded border border-red-100">
+                Error de Supabase: {profilesError.message}
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mb-6">
+            Asegúrate de haber añadido estas variables en Vercel y haber hecho un <b>Redeploy</b>.
           </p>
-          <Link href="/" className="bg-[#2A398D] text-white px-6 py-3 rounded-xl font-bold uppercase text-sm">
+          <Link href="/" className="inline-block bg-[#2A398D] text-white px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-[#3CAC3B] transition-colors">
             Volver al Inicio
           </Link>
         </div>
