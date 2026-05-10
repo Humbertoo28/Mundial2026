@@ -10,8 +10,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default async function PublicProfile({ params }: { params: { username: string } }) {
-  const { username } = params;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function PublicProfile(props: { params: Promise<{ username: string }> }) {
+  const params = await props.params;
+  const username = params.username;
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.id;
 
