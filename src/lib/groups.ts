@@ -27,9 +27,10 @@ export function getGroupForSticker(stickerId: string): GroupCode | null {
   // Handle special cases
   if (stickerId.startsWith('FWC') || stickerId.startsWith('CC') || stickerId === '00') return null;
   
-  const prefix = stickerId.substring(0, 3).toUpperCase();
-  // Map some variations if necessary (e.g. RSA vs SUDAFRICA)
-  // Based on the user prompt, we use the 3-letter codes directly
+  let prefix = stickerId.substring(0, 3).toUpperCase();
+  // Normalizar variaciones de prefijos de la base de datos a los códigos oficiales
+  if (prefix === 'JAP') prefix = 'JPN';
+  
   return PREFIX_TO_GROUP[prefix] || null;
 }
 
