@@ -1,14 +1,16 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+// Renamed from middleware to proxy — required by Next.js v16+
+// See: node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md
 export default withAuth(
-  function middleware(req) {
+  function proxy(req) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
     // ── Protección del Panel Admin ────────────────────────────────
     // Segunda capa de defensa: verifica el email aquí también.
-    // Incluso si el Server Component falla, el middleware bloquea.
+    // Incluso si el Server Component falla, el proxy bloquea.
     if (pathname.startsWith('/admin')) {
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "humbertolandero78@gmail.com";
       if (token?.email !== ADMIN_EMAIL) {
