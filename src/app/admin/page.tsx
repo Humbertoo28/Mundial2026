@@ -36,8 +36,8 @@ export default async function AdminDashboard() {
       // Fetch all users with error logging
       const profilesResult = await supabase
         .from('profiles')
-        .select('id, username, email, avatar_url, created_at')
-        .order('created_at', { ascending: false });
+        .select('id, username, email, avatar_url, updated_at')
+        .order('updated_at', { ascending: false });
         
       profiles = profilesResult.data;
       profilesError = profilesResult.error;
