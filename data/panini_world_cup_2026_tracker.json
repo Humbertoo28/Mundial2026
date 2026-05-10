@@ -5865,7 +5865,7 @@
             "ID": "POR 14",
             "SECCIÓN": "PORTUGAL",
             "TIPO": "NORMAL",
-            "NOMBRE_APELLIDO": "RUBEN NEVES",
+            "NOMBRE_APELLIDO": "JOAO NEVES",
             "CANTIDAD": 0
         },
         {
@@ -7809,7 +7809,7 @@
             "ID": "POR 14",
             "SELECCION": "PORTUGAL",
             "TIPO": "NORMAL",
-            "NOMBRE_APELLIDO": "RUBEN NEVES",
+            "NOMBRE_APELLIDO": "JOAO NEVES",
             "CANTIDAD": 0,
             "TIENE": 0
         },
@@ -21643,7 +21643,7 @@
             "ID": "POR 14",
             "CONTEXTO": "PORTUGAL",
             "TIPO": "NORMAL",
-            "DESCRIPCION": "RUBEN NEVES",
+            "DESCRIPCION": "JOAO NEVES",
             "CANTIDAD": 0,
             "TIENE": 0
         },
