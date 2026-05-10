@@ -15,18 +15,18 @@ export default async function PublicProfile({ params }: { params: { username: st
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.id;
 
-  // Validar formato del username antes de consultar la BD
-  // Previene que usernames maliciosos (`../admin`, `<script>`, etc.) lleguen a Supabase
-  const USERNAME_REGEX = /^[a-zA-Z0-9_-]{3,15}$/;
-  if (!USERNAME_REGEX.test(username)) {
+  // Validación de seguridad: solo bloqueamos caracteres peligrosos para SQL/XSS
+  // No usamos el regex estricto aquí para no bloquear usuarios existentes
+  const SAFE_USERNAME_REGEX = /^[^<>"'`;/\\]{1,50}$/;
+  if (!SAFE_USERNAME_REGEX.test(username)) {
     notFound();
   }
 
-  // 1. Fetch the user profile by username
+  // 1. Fetch the user profile by username (case-insensitive)
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, username, full_name, avatar_url')
-    .eq('username', username)
+    .ilike('username', username)   // ilike = búsqueda sin importar mayúsculas/minúsculas
     .single();
 
   if (!profile) {
