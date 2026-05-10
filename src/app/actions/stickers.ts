@@ -11,8 +11,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Validation: sticker IDs follow pattern LETTERS+NUMBERS, max 10 chars
-const STICKER_ID_REGEX = /^[A-Z0-9]{2,10}$/;
+// Validation: sticker IDs can contain letters, numbers, spaces, slashes, and hyphens, max 50 chars
+const STICKER_ID_REGEX = /^[A-Z0-9 \/.-]{1,50}$/i;
 const MAX_QUANTITY = 50; // Nadie tiene más de 50 copias de la misma figurita
 
 export async function updateStickerQuantity(stickerId: string, quantity: number) {
