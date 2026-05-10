@@ -10,6 +10,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
 
@@ -19,16 +22,24 @@ export default async function AdminDashboard() {
     redirect('/');
   }
 
-  // Fetch all users
-  const { data: profiles } = await supabase
+  // Fetch all users with error logging
+  const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
     .select('id, username, email, avatar_url, created_at')
     .order('created_at', { ascending: false });
 
+  if (profilesError) {
+    console.error("Admin Dashboard: Error fetching profiles", profilesError);
+  }
+
   // Fetch all user stickers to calculate progress
-  const { data: allUserStickers } = await supabase
+  const { data: allUserStickers, error: stickersError } = await supabase
     .from('user_stickers')
     .select('user_id, quantity');
+    
+  if (stickersError) {
+    console.error("Admin Dashboard: Error fetching stickers", stickersError);
+  }
 
   // Stats calculation
   const totalUsers = profiles?.length || 0;
