@@ -12,32 +12,32 @@ export default async function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-[#2A398D]/20 bg-[#2A398D] shadow-lg">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-3 font-black text-2xl text-white tracking-tighter">
+      <div className="container mx-auto px-2 sm:px-4 min-h-[4rem] py-2 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-0">
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 w-full md:w-auto">
+          <Link href="/" className="flex items-center gap-2 font-black text-lg sm:text-2xl text-white tracking-tighter">
             <div className="bg-white p-1 rounded-lg shadow-inner flex items-center justify-center">
               <img 
                 src="https://flagcdn.com/w80/pa.png" 
                 alt="Bandera de Panamá" 
-                className="h-8 w-auto rounded border border-[#474A4A]/20"
+                className="h-6 sm:h-8 w-auto rounded border border-[#474A4A]/20"
               />
             </div>
             <span>Panini Tracker PTY</span>
           </Link>
           
           {session?.user && (
-            <div className="hidden md:flex gap-4">
-              <Link href="/" className="flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors">
-                <LayoutDashboard className="h-4 w-4" />
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-4 overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
+              <Link href="/" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
+                <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
                 Resumen
               </Link>
-              <Link href="/album" className="flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors">
-                <Grid className="h-4 w-4" />
+              <Link href="/album" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
+                <Grid className="h-3 w-3 sm:h-4 sm:w-4" />
                 Mi Álbum
               </Link>
               {session.user.email === (process.env.ADMIN_EMAIL || "humbertolandero78@gmail.com") && (
-                <Link href="/admin" className="flex items-center gap-2 text-sm font-medium text-[#FFD700] hover:text-white transition-colors bg-white/10 px-3 py-1 rounded-lg">
-                  <Database className="h-4 w-4" />
+                <Link href="/admin" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-[#FFD700] hover:text-white transition-colors bg-white/10 px-2 sm:px-3 py-1 rounded-lg whitespace-nowrap">
+                  <Database className="h-3 w-3 sm:h-4 sm:w-4" />
                   Panel Admin
                 </Link>
               )}
