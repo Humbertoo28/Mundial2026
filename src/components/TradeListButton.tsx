@@ -135,7 +135,7 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowPreview(!showPreview)}
             className="text-xs font-bold text-[#474A4A] bg-[#D1D4D1]/80 hover:bg-[#D1D4D1] px-3 py-2 rounded-lg border border-[#474A4A]/20 transition-colors"
@@ -143,27 +143,34 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
             {showPreview ? 'Ocultar' : 'Ver lista'}
           </button>
           
-          <div className="flex gap-2">
-            <button
-              onClick={handleCopy}
-              title="Copiar texto"
-              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 shadow-sm ${
-                copied
-                  ? 'bg-[#3CAC3B] text-white'
-                  : 'bg-[#D1D4D1]/50 text-[#474A4A] hover:bg-[#D1D4D1]'
-              }`}
-            >
-              {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-            </button>
-            
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#25D366] text-white hover:bg-[#128C7E] transition-all shadow-md active:scale-95"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Enviar a WhatsApp
-            </button>
-          </div>
+          <button
+            onClick={handleCopy}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 shadow-sm active:scale-95 border ${
+              copied
+                ? 'bg-[#3CAC3B] text-white border-[#3CAC3B]'
+                : 'bg-white text-[#474A4A] border-[#474A4A]/20 hover:bg-[#D1D4D1]/30'
+            }`}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                ¡Copiado!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                Copiar Lista
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#25D366] text-white hover:bg-[#128C7E] transition-all shadow-md active:scale-95"
+          >
+            <MessageSquare className="h-4 w-4" />
+            WhatsApp Directo
+          </button>
         </div>
       </div>
 
