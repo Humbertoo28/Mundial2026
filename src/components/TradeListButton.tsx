@@ -43,21 +43,64 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
 
   const handleCopy = async () => {
     if (!tradeText) return;
-    try {
-      await navigator.clipboard.writeText(tradeText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      // Fallback for mobile
-      const textarea = document.createElement('textarea');
-      textarea.value = tradeText;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+    
+    // Intento 1: API Moderna
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(tradeText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      } catch (err) {
+        console.error('API de portapapeles falló:', err);
+      }
     }
+
+    // Intento 2: Fallback tradicional (mejorado para móviles)
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = tradeText;
+      
+      // Asegurar que no sea visible pero esté en el DOM
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (err) {
+      console.error('Fallback de copia falló:', err);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!tradeText) return;
+    
+    // 1. Intentar API de Compartir Nativa (iOS/Android)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Mis Repetidas - Mundial 2026',
+          text: tradeText,
+        });
+        return;
+      } catch (err) {
+        console.log('Compartir nativo cancelado o falló');
+      }
+    }
+    
+    // 2. Fallback: Abrir WhatsApp directamente
+    const encodedText = encodeURIComponent(tradeText);
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
 
   if (repeatedStickers.length === 0) {
@@ -99,26 +142,28 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
           >
             {showPreview ? 'Ocultar' : 'Ver lista'}
           </button>
-          <button
-            onClick={handleCopy}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all duration-300 shadow-sm hover:scale-105 active:scale-95 ${
-              copied
-                ? 'bg-[#3CAC3B] text-white shadow-[0_0_15px_rgba(60,172,59,0.4)]'
-                : 'bg-[#2A398D] hover:bg-[#3CAC3B] text-white'
-            }`}
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4" />
-                ¡Copiado!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copiar para WhatsApp
-              </>
-            )}
-          </button>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={handleCopy}
+              title="Copiar texto"
+              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 shadow-sm ${
+                copied
+                  ? 'bg-[#3CAC3B] text-white'
+                  : 'bg-[#D1D4D1]/50 text-[#474A4A] hover:bg-[#D1D4D1]'
+              }`}
+            >
+              {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+            </button>
+            
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#25D366] text-white hover:bg-[#128C7E] transition-all shadow-md active:scale-95"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Enviar a WhatsApp
+            </button>
+          </div>
         </div>
       </div>
 
