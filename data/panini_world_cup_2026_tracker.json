@@ -6537,7 +6537,7 @@
             "ID": "CRO10",
             "SECCIÓN": "CROACIA",
             "TIPO": "NORMAL",
-            "NOMBRE_APELLIDO": "MATO KOVACIC",
+            "NOMBRE_APELLIDO": "MATEO KOVACIC",
             "CANTIDAD": 0
         },
         {
@@ -7295,7 +7295,7 @@
             "ID": "CRO10",
             "SELECCION": "CROACIA",
             "TIPO": "NORMAL",
-            "NOMBRE_APELLIDO": "MATO KOVACIC",
+            "NOMBRE_APELLIDO": "MATEO KOVACIC",
             "CANTIDAD": 0,
             "TIENE": 0
         },
@@ -22411,7 +22411,7 @@
             "ID": "CRO10",
             "CONTEXTO": "CROACIA",
             "TIPO": "NORMAL",
-            "DESCRIPCION": "MATO KOVACIC",
+            "DESCRIPCION": "MATEO KOVACIC",
             "CANTIDAD": 0,
             "TIENE": 0
         },
