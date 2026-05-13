@@ -28,18 +28,38 @@ export async function getRankingData(): Promise<RankingUser[]> {
 
   if (pError) throw new Error("Error al cargar perfiles");
 
-  // 2. Fetch all sticker counts
-  // We only need user_id and quantity to calculate the stats
-  const { data: userStickers, error: sError } = await supabase
-    .from('user_stickers')
-    .select('user_id, quantity');
+  // 2. Fetch all user stickers using pagination to bypass the 1000 row limit
+  let allUserStickers: { user_id: string, quantity: number }[] = [];
+  let from = 0;
+  const PAGE_SIZE = 1000;
+  let hasMore = true;
 
-  if (sError) throw new Error("Error al cargar estadísticas");
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('user_stickers')
+      .select('user_id, quantity')
+      .range(from, from + PAGE_SIZE - 1);
+    
+    if (error) {
+      console.error("Ranking Action: Error fetching stickers page", error);
+      break;
+    }
+
+    if (data && data.length > 0) {
+      allUserStickers = [...allUserStickers, ...data];
+      from += PAGE_SIZE;
+      if (data.length < PAGE_SIZE) hasMore = false;
+    } else {
+      hasMore = false;
+    }
+    
+    if (from > 50000) break; // Safety break
+  }
 
   // 3. Process data in memory
   const statsMap: Record<string, { tengo: number, repetidas: number }> = {};
 
-  userStickers.forEach(s => {
+  allUserStickers.forEach(s => {
     if (!statsMap[s.user_id]) {
       statsMap[s.user_id] = { tengo: 0, repetidas: 0 };
     }
