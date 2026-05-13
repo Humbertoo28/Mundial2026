@@ -218,24 +218,20 @@ export default function TradeManager({
                 </div>
                 <div className="flex-1">
                   <div className="relative">
-                    <select 
-                      value={traderName === 'Otro (Fuera del sistema)' ? 'Otro (Fuera del sistema)' : (allProfiles.includes(traderName.replace('@', '')) ? traderName : (traderName ? 'custom' : ''))}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'custom' || val === 'Otro (Fuera del sistema)') {
-                          setTraderName('Otro (Fuera del sistema)');
-                        } else {
-                          setTraderName(val);
-                        }
-                      }}
-                      className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] appearance-none cursor-pointer pr-8"
-                    >
-                      <option value="" disabled>Seleccionar usuario...</option>
-                      <option value="Otro (Fuera del sistema)">👤 Otro (Persona fuera del sistema)</option>
+                    <input 
+                      type="text"
+                      list="user-list"
+                      placeholder="Seleccionar usuario o buscar..."
+                      value={traderName}
+                      onChange={(e) => setTraderName(e.target.value)}
+                      className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/40 pr-8"
+                    />
+                    <datalist id="user-list">
+                      <option value="Otro (Persona fuera del sistema)" />
                       {allProfiles.map(username => (
-                        <option key={username} value={`@${username}`}>@ {username}</option>
+                        <option key={username} value={`@${username}`} />
                       ))}
-                    </select>
+                    </datalist>
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#2A398D]/40">
                       <Search className="h-3 w-3" />
                     </div>
