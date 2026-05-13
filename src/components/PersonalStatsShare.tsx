@@ -24,7 +24,7 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
                  `✅ Conseguidas: ${stats.tengo}\n\n` +
                  `🤝 Intercambios Realizados: ${stats.totalTrades}\n` +
                  `👥 Personas Conocidas: ${stats.uniqueTradersCount}\n` +
-                 `📦 Cromos Movidos: ${stats.totalItemsTraded}\n\n` +
+                 `📦 Figuritas Movidas: ${stats.totalItemsTraded}\n\n` +
                  `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
     
     navigator.clipboard.writeText(text);
@@ -106,7 +106,7 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
                       <p className="text-xl font-black text-white">{stats.uniqueTradersCount}</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Cromos</p>
+                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Figuritas</p>
                       <p className="text-xl font-black text-white">{stats.totalItemsTraded}</p>
                     </div>
                   </div>
