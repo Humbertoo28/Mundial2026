@@ -25,6 +25,76 @@ export default function PersonalStatsShare({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const handleDownloadImage = async () => {
+    // Generar una imagen usando Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1920;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fondo degradado
+    const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
+    gradient.addColorStop(0, '#2A398D');
+    gradient.addColorStop(0.5, '#1e2a6d');
+    gradient.addColorStop(1, '#0f172a');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Decoraciones (círculos difuminados)
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#3CAC3B';
+    ctx.beginPath(); ctx.arc(0, 0, 500, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E61D25';
+    ctx.beginPath(); ctx.arc(1080, 1920, 500, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1.0;
+
+    // Título
+    ctx.font = 'black italic 40px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('MI PROGRESO', 540, 400);
+
+    // Porcentaje
+    ctx.font = '900 italic 280px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText(`${stats.porcentaje}%`, 540, 700);
+
+    // Tarjetas de Datos
+    const drawCard = (y: number, label: string, value: string | number, color?: string) => {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath(); ctx.roundRect(140, y, 800, 200, 40); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 2; ctx.stroke();
+      
+      ctx.font = 'bold 30px Arial';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillText(label.toUpperCase(), 540, y + 60);
+      
+      ctx.font = '900 80px Arial';
+      ctx.fillStyle = color || 'white';
+      ctx.fillText(String(value), 540, y + 150);
+    };
+
+    drawCard(850, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
+    drawCard(1100, 'Repetidas', stats.repetidas, 'white');
+    drawCard(1350, 'Intercambiadas', stats.totalItemsTraded, 'white');
+
+    // Footer
+    ctx.font = 'black italic 60px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText(`@${username.toUpperCase()}`, 540, 1700);
+    ctx.font = 'bold 30px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1760);
+
+    // Descargar
+    const link = document.createElement('a');
+    link.download = `logros_panini_${username}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+
   const handleShareWhatsApp = () => {
     const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
                  `👤 Usuario: @${username}\n` +
@@ -32,28 +102,24 @@ export default function PersonalStatsShare({
                  `✅ Conseguidas: ${stats.tengo}\n` +
                  `🔁 Repetidas: ${stats.repetidas}\n` +
                  `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
-                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
+                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
     
     const encodedText = encodeURIComponent(text);
     window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
   };
 
   const handleShareInstagram = () => {
-    // Instagram no permite compartir texto/link directo desde web.
-    // Lo mejor es copiar al portapapeles y avisar al usuario.
     const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
                  `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
                  `✅ Conseguidas: ${stats.tengo}\n` +
                  `🔁 Repetidas: ${stats.repetidas}\n` +
                  `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
-                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
+                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    
-    // Intentar abrir Instagram
     window.open('https://www.instagram.com/', '_blank');
   };
 
@@ -64,7 +130,7 @@ export default function PersonalStatsShare({
                  `✅ Conseguidas: ${stats.tengo}\n` +
                  `🔁 Repetidas: ${stats.repetidas}\n` +
                  `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
-                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
+                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -163,7 +229,15 @@ export default function PersonalStatsShare({
 
             {/* Acciones del Modal */}
             <div className="p-6 bg-white dark:bg-[#1A1A1A] border-t border-[#474A4A]/10 dark:border-white/10 flex flex-col gap-3">
-              <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest text-center mb-2">Compartir en Redes Sociales</p>
+              <button 
+                onClick={handleDownloadImage}
+                className="w-full flex items-center justify-center gap-3 bg-[#3CAC3B] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-lg hover:scale-[1.02] active:scale-95 transition-all mb-2"
+              >
+                <Share2 className="h-5 w-5" />
+                Descargar Tarjeta (Imagen)
+              </button>
+
+              <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest text-center mb-1">Compartir texto directo</p>
               
               <div className="grid grid-cols-2 gap-3">
                 <button 
