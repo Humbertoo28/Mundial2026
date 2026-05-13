@@ -50,7 +50,8 @@ export default async function AdminDashboard() {
       // Fetch all user stickers to calculate progress
       const stickersResult = await supabase
         .from('user_stickers')
-        .select('user_id, sticker_id, quantity');
+        .select('user_id, sticker_id, quantity')
+        .limit(10000); // Aumentar límite para evitar truncado
         
       allUserStickers = stickersResult.data;
       stickersError = stickersResult.error;
@@ -59,7 +60,8 @@ export default async function AdminDashboard() {
       const tradeLogsResult = await supabase
         .from('trade_logs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limitar logs recientes
       
       tradeLogs = tradeLogsResult.data;
     }
