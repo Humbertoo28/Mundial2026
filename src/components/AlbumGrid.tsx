@@ -264,9 +264,16 @@ export default function AlbumGrid({
                   {getSectionDisplayName(sectionName)}
                 </h2>
                 <div className="flex-1 h-px bg-[#474A4A]/20" />
-                <span className="text-sm font-bold text-[#474A4A]/60 dark:text-white/60 bg-white dark:bg-[#262626] border border-[#474A4A]/10 dark:border-white/10 px-3 py-1 rounded-full whitespace-nowrap">
-                  {sectionStickers.length} figuritas
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-[#474A4A]/60 dark:text-white/60 bg-white dark:bg-[#262626] border border-[#474A4A]/10 dark:border-white/10 px-3 py-1 rounded-full whitespace-nowrap">
+                    {sectionStickers.length} {sectionStickers.length === 1 ? 'figurita' : 'figuritas'}
+                  </span>
+                  {showOnlyRepeated && (
+                    <span className="text-[10px] font-black text-[#E61D25] uppercase mt-1">
+                      {sectionStickers.reduce((acc, s) => acc + (inventory[s.id] - 1), 0)} Repetidas
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Grid de Láminas */}
