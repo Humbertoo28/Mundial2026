@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import { LogIn, Layers, CheckCircle, PackageOpen, ArrowRight, Filter } from "lucide-react";
+import { LogIn, Layers, CheckCircle, PackageOpen, ArrowRight, Filter, Trophy } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import TradeListButton from "@/components/TradeListButton";
@@ -218,9 +218,18 @@ export default async function Home() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <UsernameSettings initialUsername={profile?.username} />
         <AvatarSelector currentAvatar={profile?.avatar_url} />
+        <Link 
+          href="/ranking"
+          className="bg-gradient-to-br from-[#FFD700] via-[#FDB931] to-[#E5A010] p-6 rounded-3xl shadow-xl flex flex-col items-center justify-center text-center group hover:scale-[1.02] transition-all active:scale-95 border-2 border-white/20 relative overflow-hidden"
+        >
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+          <Trophy className="h-12 w-12 text-[#2A398D] mb-3 relative z-10 group-hover:animate-bounce" />
+          <span className="text-2xl font-black text-[#2A398D] uppercase italic tracking-tighter relative z-10">Ranking Mundial</span>
+          <span className="text-[10px] font-bold text-[#2A398D]/60 uppercase tracking-widest mt-1 relative z-10">Ver Tabla de Posiciones</span>
+        </Link>
       </div>
 
       {/* Estadísticas de Intercambio y Compartir */}
