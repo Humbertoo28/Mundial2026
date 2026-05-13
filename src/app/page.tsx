@@ -127,12 +127,20 @@ export default async function Home() {
   
   const repeatedStickers = (userStickers || [])
     .filter(s => s.quantity > 1)
-    .map(s => ({
-      sticker_id: s.sticker_id,
-      name: allStickers?.find(as => as.id === s.sticker_id)?.name || '',
-      quantity: s.quantity,
-      section: stickerSectionMap[s.sticker_id] || 'Otros',
-    }))
+    .map(s => {
+      // Normalizar IDs para el match (quitar espacios)
+      const normalizedSId = s.sticker_id.replace(/\s/g, '').toUpperCase();
+      const stickerInfo = allStickers?.find(as => 
+        as.id.replace(/\s/g, '').toUpperCase() === normalizedSId
+      );
+      
+      return {
+        sticker_id: s.sticker_id,
+        name: stickerInfo?.name || '',
+        quantity: s.quantity,
+        section: stickerSectionMap[s.sticker_id] || 'Otros',
+      };
+    })
     .sort((a, b) => a.section.localeCompare(b.section));
 
   const faltan = totalStickers - tengo;
