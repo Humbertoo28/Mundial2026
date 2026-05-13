@@ -250,7 +250,7 @@ export default function TradeManager({
                       setReceivedInput(e.target.value);
                       setError(null);
                     }}
-                    className="w-full bg-[#D1D4D1]/20 border-2 border-[#474A4A]/10 rounded-2xl pl-12 pr-14 py-4 text-sm font-bold focus:outline-none focus:border-[#3CAC3B] focus:bg-white transition-all shadow-inner"
+                    className="w-full bg-[#D1D4D1]/20 border-2 border-[#474A4A]/10 rounded-2xl pl-12 pr-14 py-4 text-base font-bold focus:outline-none focus:border-[#3CAC3B] focus:bg-white transition-all shadow-inner"
                   />
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#474A4A]/40 group-focus-within:text-[#3CAC3B] transition-colors" />
                   <button 
