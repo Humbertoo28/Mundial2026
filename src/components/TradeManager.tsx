@@ -220,19 +220,31 @@ export default function TradeManager({
                   <label className="text-[10px] font-black text-[#2A398D] uppercase tracking-widest block mb-1">Intercambiando con</label>
                   <input 
                     type="text" 
-                    placeholder="Escribe el nombre o @usuario de la otra persona..." 
+                    placeholder="Escribe el nombre..." 
                     value={traderName}
                     onChange={(e) => setTraderName(e.target.value)}
-                    list="trader-suggestions"
                     className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/30"
                   />
-                  <datalist id="trader-suggestions">
-                    <option value="Otro (Fuera del sistema)" />
-                    {allProfiles.map(username => (
-                      <option key={username} value={`@${username}`} />
-                    ))}
-                  </datalist>
                 </div>
+              </div>
+              
+              {/* Sugerencias Rápidas */}
+              <div className="flex flex-wrap gap-2 mt-3 ml-11">
+                <button 
+                  onClick={() => setTraderName('Otro (Fuera del sistema)')}
+                  className="text-[9px] font-black uppercase px-3 py-1.5 bg-[#2A398D]/10 text-[#2A398D] rounded-full hover:bg-[#2A398D] hover:text-white transition-all border border-[#2A398D]/10"
+                >
+                  Otro
+                </button>
+                {allProfiles.slice(0, 5).map(username => (
+                  <button 
+                    key={username}
+                    onClick={() => setTraderName(`@${username}`)}
+                    className="text-[9px] font-black uppercase px-3 py-1.5 bg-white/50 text-[#2A398D]/60 rounded-full hover:bg-[#2A398D] hover:text-white transition-all border border-[#2A398D]/10"
+                  >
+                    @{username}
+                  </button>
+                ))}
               </div>
             </div>
 
