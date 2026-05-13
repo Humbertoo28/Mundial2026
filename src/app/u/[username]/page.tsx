@@ -180,12 +180,12 @@ export default async function PublicProfile(props: { params: Promise<{ username:
                     ) : (
                       <div className="w-6 h-6 bg-[#D1D4D1] dark:bg-white/10 rounded-full flex items-center justify-center text-[10px]">🏆</div>
                     )}
-                    <span className="font-bold text-[#2A398D] dark:text-white/80 text-sm uppercase">{getSectionDisplayName(section)}</span>
+                    <span className="font-bold text-[#2A398D] dark:text-[#4C5DBB] text-sm uppercase">{getSectionDisplayName(section)}</span>
                   </div>
                   <div className="w-full bg-[#D1D4D1]/30 h-2 rounded-full overflow-hidden">
                     <div className="h-full bg-[#2A398D] transition-all" style={{ width: `${perc}%` }} />
                   </div>
-                  <div className="flex justify-between mt-2 text-[10px] font-bold text-[#474A4A]/50">
+                  <div className="flex justify-between mt-2 text-[10px] font-bold text-[#474A4A]/50 dark:text-white/40">
                     <span>{stats.owned} / {stats.total}</span>
                     <span>{perc}%</span>
                   </div>
@@ -219,7 +219,7 @@ export default async function PublicProfile(props: { params: Promise<{ username:
               {Object.entries(repeatedBySection).sort().map(([section, stickers]) => (
                 <div key={section} className="border-b border-[#474A4A]/10 pb-4 last:border-0">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-black text-[#2A398D] uppercase tracking-wider">{getSectionDisplayName(section)}</span>
+                    <span className="text-xs font-black text-[#2A398D] dark:text-[#4C5DBB] uppercase tracking-wider">{getSectionDisplayName(section)}</span>
                     <div className="flex-1 h-px bg-[#2A398D]/10"></div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -230,9 +230,9 @@ export default async function PublicProfile(props: { params: Promise<{ username:
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-bold border transition-all ${
                             iNeedIt 
                               ? 'bg-[#2A398D] text-white border-[#2A398D] shadow-md scale-105' 
-                              : 'bg-[#D1D4D1]/30 border-[#474A4A]/10 text-[#474A4A]'
+                              : 'bg-[#D1D4D1]/30 border-[#474A4A]/10 text-[#474A4A] dark:text-white/60 dark:bg-white/10'
                           }`}>
-                            {s.id} {s.qty > 1 && <span className={iNeedIt ? 'text-white/70' : 'text-[#2A398D] ml-1'}>x{s.qty}</span>}
+                            {s.id} {s.qty > 1 && <span className={iNeedIt ? 'text-white/70' : 'text-[#2A398D] dark:text-[#4C5DBB] ml-1'}>x{s.qty}</span>}
                             {iNeedIt && <Heart className="h-3 w-3 fill-current animate-pulse text-[#E61D25]" />}
                           </span>
                           {iNeedIt ? (

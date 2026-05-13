@@ -21,24 +21,44 @@ export type RankingUser = {
 export async function getRankingData(): Promise<RankingUser[]> {
   const totalStickers = 994;
 
-  // 1. Fetch all profiles
-  const { data: profiles, error: pError } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url');
+  // 1. Fetch ALL profiles using pagination
+  let allProfiles: any[] = [];
+  let pFrom = 0;
+  const P_PAGE_SIZE = 1000;
+  let pHasMore = true;
 
-  if (pError) throw new Error("Error al cargar perfiles");
+  while (pHasMore) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .range(pFrom, pFrom + P_PAGE_SIZE - 1);
+    
+    if (error) {
+      console.error("Ranking Action: Error fetching profiles page", error);
+      break;
+    }
 
-  // 2. Fetch all user stickers using pagination to bypass the 1000 row limit
-  let allUserStickers: { user_id: string, quantity: number }[] = [];
-  let from = 0;
-  const PAGE_SIZE = 1000;
-  let hasMore = true;
+    if (data && data.length > 0) {
+      allProfiles = [...allProfiles, ...data];
+      pFrom += P_PAGE_SIZE;
+      if (data.length < P_PAGE_SIZE) pHasMore = false;
+    } else {
+      pHasMore = false;
+    }
+    if (pFrom > 10000) break; // Safety break
+  }
 
-  while (hasMore) {
+  // 2. Fetch ALL user stickers using pagination
+  let allUserStickers: { user_id: string, sticker_id: string, quantity: number }[] = [];
+  let sFrom = 0;
+  const S_PAGE_SIZE = 1000;
+  let sHasMore = true;
+
+  while (sHasMore) {
     const { data, error } = await supabase
       .from('user_stickers')
-      .select('user_id, quantity')
-      .range(from, from + PAGE_SIZE - 1);
+      .select('user_id, sticker_id, quantity')
+      .range(sFrom, sFrom + S_PAGE_SIZE - 1);
     
     if (error) {
       console.error("Ranking Action: Error fetching stickers page", error);
@@ -47,52 +67,54 @@ export async function getRankingData(): Promise<RankingUser[]> {
 
     if (data && data.length > 0) {
       allUserStickers = [...allUserStickers, ...data];
-      from += PAGE_SIZE;
-      if (data.length < PAGE_SIZE) hasMore = false;
+      sFrom += S_PAGE_SIZE;
+      if (data.length < S_PAGE_SIZE) sHasMore = false;
     } else {
-      hasMore = false;
+      sHasMore = false;
     }
-    
-    if (from > 50000) break; // Safety break
+    if (sFrom > 100000) break; // Safety break (increased to 100k)
   }
 
-  // 3. Process data in memory
-  const statsMap: Record<string, { tengo: number, repetidas: number }> = {};
+  // 3. Process data in memory with Normalization (Same as Admin)
+  const statsMap: Record<string, Record<string, number>> = {};
 
   allUserStickers.forEach(s => {
     if (!statsMap[s.user_id]) {
-      statsMap[s.user_id] = { tengo: 0, repetidas: 0 };
+      statsMap[s.user_id] = {};
     }
-    
-    if (s.quantity > 0) {
-      statsMap[s.user_id].tengo++;
-    }
-    
-    if (s.quantity > 1) {
-      statsMap[s.user_id].repetidas += (s.quantity - 1);
-    }
+    // Normalize ID to avoid duplicates like "ARG01" vs "ARG 01"
+    const id = s.sticker_id.replace(/\s/g, '').toUpperCase();
+    statsMap[s.user_id][id] = (statsMap[s.user_id][id] || 0) + s.quantity;
   });
 
   // 4. Combine with profiles
-  const ranking: RankingUser[] = profiles.map(p => {
-    const stats = statsMap[p.id] || { tengo: 0, repetidas: 0 };
+  const ranking: RankingUser[] = allProfiles.map(p => {
+    const userInventory = statsMap[p.id] || {};
+    let tengo = 0;
+    let repetidas = 0;
+    
+    Object.values(userInventory).forEach(qty => {
+      if (qty > 0) tengo++;
+      if (qty > 1) repetidas += (qty - 1);
+    });
+
     return {
       id: p.id,
       username: p.username || 'Anónimo',
       avatar_url: p.avatar_url,
-      tengo: stats.tengo,
-      repetidas: stats.repetidas,
-      faltantes: totalStickers - stats.tengo,
-      porcentaje: parseFloat(((stats.tengo / totalStickers) * 100).toFixed(1)),
+      tengo: tengo,
+      repetidas: repetidas,
+      faltantes: totalStickers - tengo,
+      porcentaje: parseFloat(((tengo / totalStickers) * 100).toFixed(1)),
       total: totalStickers
     };
   });
 
-  // 5. Sort by percentage (desc) and then by username
+  // 5. Sort by tengo (unique) primarily, then by percentage
   return ranking.sort((a, b) => {
-    if (b.porcentaje !== a.porcentaje) {
-      return b.porcentaje - a.porcentaje;
+    if (b.tengo !== a.tengo) {
+      return b.tengo - a.tengo;
     }
-    return b.tengo - a.tengo;
+    return b.porcentaje - a.porcentaje;
   });
 }
