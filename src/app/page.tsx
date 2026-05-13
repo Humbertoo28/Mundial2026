@@ -124,11 +124,9 @@ export default async function Home() {
   if (allStickers) {
     allStickers.forEach(s => { 
       stickerSectionMap[s.id] = s.section; 
-      // También guardar con ID normalizado (sin espacios)
-      const normalized = s.id.replace(/\s/g, '');
-      if (normalized !== s.id) {
-        stickerSectionMap[normalized] = s.section;
-      }
+      // También guardar con ID normalizado (sin espacios, mayúsculas)
+      const normalized = s.id.replace(/\s/g, '').toUpperCase();
+      stickerSectionMap[normalized] = s.section;
     });
   }
   
