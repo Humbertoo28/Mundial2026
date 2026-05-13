@@ -150,10 +150,15 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
       roundRect(ctx, 450, yOffset + 130, filledWidth, barHeight, 12, true, false);
 
       // Porcentaje (Texto más grande para que se vea)
+      // Porcentaje (Centrado verticalmente con la barra)
       ctx.fillStyle = isFirst ? '#FFD700' : '#FFFFFF';
       ctx.font = 'italic 900 55px Inter, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`${user.porcentaje}%`, 1000, yOffset + 155);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${user.porcentaje}%`, 1000, yOffset + 130 + (25/2));
+      
+      // Resetear baseline para el resto
+      ctx.textBaseline = 'alphabetic';
       
       // Conteo debajo (pequeño)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
