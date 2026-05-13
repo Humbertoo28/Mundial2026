@@ -311,9 +311,9 @@ export default async function Home() {
             return (
               <div key={group} className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/10 dark:border-white/10 p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-black text-[#2A398D] text-sm tracking-tight">GRUPO {group}</span>
+                  <span className="font-black text-[#2A398D] dark:text-[#4C5DBB] text-sm tracking-tight">GRUPO {group}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isNearComplete ? 'bg-[#3CAC3B]/10 text-[#3CAC3B]' : 'bg-[#D1D4D1]/30 text-[#474A4A]'
+                    isNearComplete ? 'bg-[#3CAC3B]/10 text-[#3CAC3B]' : 'bg-[#D1D4D1]/30 text-[#474A4A] dark:bg-white/10 dark:text-white/80'
                   }`}>
                     {percentage}%
                   </span>
@@ -324,7 +324,7 @@ export default async function Home() {
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] font-bold text-[#474A4A]/50">
+                <div className="flex justify-between text-[10px] font-bold text-[#474A4A]/50 dark:text-white/40">
                   <span>{data.owned} / {data.total}</span>
                 </div>
               </div>
@@ -367,12 +367,12 @@ export default async function Home() {
                     <span className="font-bold text-[#2A398D] text-sm uppercase tracking-wider line-clamp-1">{getSectionDisplayName(section)}</span>
                   </div>
                   <div className="flex items-end justify-between mt-2">
-                    <span className="text-xs text-[#474A4A]/60 font-medium">Faltan</span>
+                    <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-medium">Faltan</span>
                     <div className="flex items-baseline gap-1">
                       <span className={`text-2xl font-black ${isAlmostComplete ? 'text-[#3CAC3B]' : 'text-[#E61D25]'}`}>
                         {data.missing}
                       </span>
-                      <span className="text-xs text-[#474A4A]/60 font-bold">/ {data.total}</span>
+                      <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-bold">/ {data.total}</span>
                     </div>
                   </div>
                   {isAlmostComplete && (
