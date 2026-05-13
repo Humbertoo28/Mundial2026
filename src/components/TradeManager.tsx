@@ -221,10 +221,10 @@ export default function TradeManager({
                     <input 
                       type="text"
                       list="user-list"
-                      placeholder="Seleccionar usuario o buscar..."
+                      placeholder="Escribe el nombre del usuario..."
                       value={traderName}
                       onChange={(e) => setTraderName(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/40 pr-8"
+                      className="w-full bg-white/50 dark:bg-black/20 border border-[#2A398D]/10 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2A398D]/20 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/30 pr-10 transition-all"
                     />
                     <datalist id="user-list">
                       <option value="Otro (Persona fuera del sistema)" />
@@ -232,8 +232,8 @@ export default function TradeManager({
                         <option key={username} value={`@${username}`} />
                       ))}
                     </datalist>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#2A398D]/40">
-                      <Search className="h-3 w-3" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#2A398D]">
+                      <Search className="h-5 w-5" />
                     </div>
                   </div>
                 </div>
