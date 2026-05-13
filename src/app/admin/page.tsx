@@ -49,7 +49,7 @@ export default async function AdminDashboard() {
       // Fetch all user stickers to calculate progress
       const stickersResult = await supabase
         .from('user_stickers')
-        .select('user_id, quantity');
+        .select('user_id, sticker_id, quantity');
         
       allUserStickers = stickersResult.data;
       stickersError = stickersResult.error;
@@ -101,20 +101,35 @@ export default async function AdminDashboard() {
 
   // Stats calculation
   const totalUsers = profiles?.length || 0;
+  const TOTAL_ALBUM_STICKERS = 994;
   
   // Aggregate stats per user
   const userStats = profiles?.map(profile => {
-    const userStickers = allUserStickers?.filter(us => us.user_id === profile.id) || [];
-    const uniqueStickers = userStickers.filter(us => us.quantity > 0).length;
-    const repeatedStickers = userStickers.reduce((acc, us) => acc + (us.quantity > 1 ? us.quantity - 1 : 0), 0);
-    const totalStickersCount = userStickers.reduce((acc, us) => acc + us.quantity, 0);
+    const rawStickers = allUserStickers?.filter(us => us.user_id === profile.id) || [];
+    
+    // Agrupar por ID normalizado
+    const inventoryMap: Record<string, number> = {};
+    rawStickers.forEach(s => {
+      const id = s.sticker_id.replace(/\s/g, '').toUpperCase();
+      inventoryMap[id] = (inventoryMap[id] || 0) + s.quantity;
+    });
+
+    let uniqueStickers = 0;
+    let repeatedStickers = 0;
+    let totalStickersCount = 0;
+
+    Object.values(inventoryMap).forEach(qty => {
+      if (qty > 0) uniqueStickers++;
+      if (qty > 1) repeatedStickers += (qty - 1);
+      totalStickersCount += qty;
+    });
     
     return {
       ...profile,
       uniqueStickers,
       repeatedStickers,
       totalStickersCount,
-      percentage: Math.round((uniqueStickers / 670) * 100) // Assuming ~670 total stickers
+      percentage: Math.round((uniqueStickers / TOTAL_ALBUM_STICKERS) * 100)
     };
   }).sort((a, b) => b.uniqueStickers - a.uniqueStickers);
 
