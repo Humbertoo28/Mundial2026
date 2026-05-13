@@ -66,14 +66,20 @@ export default async function Home() {
   let tengo = 0;
   let repetidas = 0;
   
-  // Create inventory map for quick lookup
+  // Create inventory map for quick lookup and grouping
   const inventoryMap: Record<string, number> = {};
 
   if (userStickers) {
     userStickers.forEach(s => {
-      inventoryMap[s.sticker_id] = s.quantity;
-      if (s.quantity > 0) tengo++;
-      if (s.quantity > 1) repetidas += (s.quantity - 1);
+      const id = s.sticker_id.replace(/\s/g, '').toUpperCase();
+      inventoryMap[id] = (inventoryMap[id] || 0) + s.quantity;
+    });
+  }
+
+  if (Object.keys(inventoryMap).length > 0) {
+    Object.values(inventoryMap).forEach(qty => {
+      if (qty > 0) tengo++;
+      if (qty > 1) repetidas += (qty - 1);
     });
   }
 
@@ -130,20 +136,18 @@ export default async function Home() {
     });
   }
   
-  const repeatedStickers = (userStickers || [])
-    .filter(s => s.quantity > 1)
-    .map(s => {
-      // Normalizar IDs para el match (quitar espacios)
-      const normalizedSId = s.sticker_id.replace(/\s/g, '').toUpperCase();
+  const repeatedStickers = Object.entries(inventoryMap)
+    .filter(([_, qty]) => qty > 1)
+    .map(([id, qty]) => {
       const stickerInfo = allStickers?.find(as => 
-        as.id.replace(/\s/g, '').toUpperCase() === normalizedSId
+        as.id.replace(/\s/g, '').toUpperCase() === id
       );
       
       return {
-        sticker_id: s.sticker_id,
+        sticker_id: id,
         name: stickerInfo?.name || '',
-        quantity: s.quantity,
-        section: stickerSectionMap[s.sticker_id] || stickerSectionMap[s.sticker_id.replace(/\s/g, '')] || stickerInfo?.section || 'Otros',
+        quantity: qty,
+        section: stickerSectionMap[id] || stickerInfo?.section || 'Otros',
       };
     })
     .sort((a, b) => a.section.localeCompare(b.section));
