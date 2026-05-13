@@ -77,9 +77,48 @@ export default function PersonalStatsShare({
 
     ctx.font = 'italic 900 100px Arial';
     ctx.fillStyle = 'white';
-    ctx.fillText(`@${username.toUpperCase()}`, 540, 1720);
+    const usernameText = `@${username.toUpperCase()}`;
+    const textWidth = ctx.measureText(usernameText).width;
+    
+    // Intentar dibujar el avatar
+    try {
+      const avatarImg = new Image();
+      avatarImg.crossOrigin = "anonymous";
+      avatarImg.src = avatarUrl;
+      
+      await new Promise((resolve) => {
+        avatarImg.onload = resolve;
+        avatarImg.onerror = resolve; // Continuar aunque falle el avatar
+      });
+
+      if (avatarImg.complete && avatarImg.naturalWidth > 0) {
+        const avatarSize = 120;
+        const totalWidth = textWidth + avatarSize + 40;
+        const startX = (1080 - totalWidth) / 2;
+        
+        // Dibujar avatar circular
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(startX + avatarSize/2, 1720 - 35, avatarSize/2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(avatarImg, startX, 1720 - 35 - avatarSize/2, avatarSize, avatarSize);
+        ctx.restore();
+        
+        // Dibujar texto al lado
+        ctx.textAlign = 'left';
+        ctx.fillText(usernameText, startX + avatarSize + 40, 1720);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(usernameText, 540, 1720);
+      }
+    } catch (e) {
+      ctx.textAlign = 'center';
+      ctx.fillText(usernameText, 540, 1720);
+    }
+
     ctx.font = 'bold 40px Arial';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.textAlign = 'center';
     ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1790);
 
     return new Promise((resolve) => {
