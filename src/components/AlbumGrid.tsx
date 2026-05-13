@@ -38,7 +38,22 @@ export default function AlbumGrid({
   const [inventory, setInventory] = useState<Record<string, number>>(() => {
     const acc: Record<string, number> = {};
     initialUserStickers.forEach(us => {
+      // Guardar con la clave original
       acc[us.sticker_id] = us.quantity;
+      // También guardar con la clave normalizada (sin espacios) para que los lookups funcionen
+      const normalized = us.sticker_id.replace(/\s/g, '');
+      if (normalized !== us.sticker_id) {
+        acc[normalized] = us.quantity;
+      }
+    });
+    // También mapear desde los IDs del catálogo hacia los del inventario
+    initialStickers.forEach(s => {
+      const normalizedCatalog = s.id.replace(/\s/g, '');
+      // Buscar si existe en el inventario con cualquier forma del ID
+      const qty = acc[s.id] || acc[normalizedCatalog];
+      if (qty !== undefined && qty > 0) {
+        acc[s.id] = qty; // Asegurar que el ID del catálogo también tenga la cantidad
+      }
     });
     return acc;
   });

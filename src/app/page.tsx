@@ -93,7 +93,7 @@ export default async function Home() {
       }
       sectionStats[sticker.section].total++;
       
-      const isOwned = inventoryMap[sticker.id] > 0;
+      const isOwned = (inventoryMap[sticker.id] || inventoryMap[sticker.id.replace(/\s/g, '')] || 0) > 0;
       if (!isOwned) {
         sectionStats[sticker.section].missing++;
       }
@@ -122,7 +122,14 @@ export default async function Home() {
   // We need section info for each sticker — join with allStickers
   const stickerSectionMap: Record<string, string> = {};
   if (allStickers) {
-    allStickers.forEach(s => { stickerSectionMap[s.id] = s.section; });
+    allStickers.forEach(s => { 
+      stickerSectionMap[s.id] = s.section; 
+      // También guardar con ID normalizado (sin espacios)
+      const normalized = s.id.replace(/\s/g, '');
+      if (normalized !== s.id) {
+        stickerSectionMap[normalized] = s.section;
+      }
+    });
   }
   
   const repeatedStickers = (userStickers || [])
@@ -138,7 +145,7 @@ export default async function Home() {
         sticker_id: s.sticker_id,
         name: stickerInfo?.name || '',
         quantity: s.quantity,
-        section: stickerSectionMap[s.sticker_id] || 'Otros',
+        section: stickerSectionMap[s.sticker_id] || stickerSectionMap[s.sticker_id.replace(/\s/g, '')] || stickerInfo?.section || 'Otros',
       };
     })
     .sort((a, b) => a.section.localeCompare(b.section));
