@@ -80,3 +80,85 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
 
   return { success: true };
 }
+
+export async function bulkUpdateStickerQuantities(updates: { stickerId: string, quantity: number }[]) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("No autenticado");
+  }
+
+  const userId = session.user.id;
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return { success: true };
+  }
+
+  // Limit bulk updates to 100 at a time to prevent abuse and timeouts
+  if (updates.length > 100) {
+    throw new Error("Máximo 100 actualizaciones por lote");
+  }
+
+  // Rate limit: una operación masiva cuenta como una operación pesada
+  const rl = checkRateLimit(userId, 'bulkUpdateSticker', 30, 60_000); 
+  if (!rl.allowed) {
+    throw new Error("Demasiadas actualizaciones masivas. Espera un momento.");
+  }
+
+  // Validar todos los inputs
+  for (const update of updates) {
+    if (typeof update.stickerId !== 'string' || !STICKER_ID_REGEX.test(update.stickerId)) {
+      throw new Error(`ID de figurita inválido: ${update.stickerId}`);
+    }
+    if (
+      typeof update.quantity !== 'number' ||
+      !Number.isInteger(update.quantity) ||
+      update.quantity < 0 ||
+      update.quantity > MAX_QUANTITY
+    ) {
+      throw new Error(`Cantidad inválida para ${update.stickerId}`);
+    }
+  }
+
+  // Separar upserts de deletes
+  const toUpsert = updates
+    .filter(u => u.quantity > 0)
+    .map(u => ({ user_id: userId, sticker_id: u.stickerId, quantity: u.quantity }));
+  
+  const toDelete = updates
+    .filter(u => u.quantity === 0)
+    .map(u => u.stickerId);
+
+  // Ejecutar operaciones en paralelo
+  const promises = [];
+
+  if (toUpsert.length > 0) {
+    promises.push(
+      supabase
+        .from('user_stickers')
+        .upsert(toUpsert, { onConflict: 'user_id, sticker_id' })
+    );
+  }
+
+  if (toDelete.length > 0) {
+    promises.push(
+      supabase
+        .from('user_stickers')
+        .delete()
+        .eq('user_id', userId)
+        .in('sticker_id', toDelete)
+    );
+  }
+
+  const results = await Promise.all(promises);
+  const errors = results.filter(r => r.error);
+
+  if (errors.length > 0) {
+    console.error("Errors in bulk update:", errors);
+    throw new Error("Error al realizar la actualización masiva");
+  }
+
+  revalidatePath('/');
+  revalidatePath('/album');
+
+  return { success: true };
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Search, Filter, Minus, Plus } from 'lucide-react';
+import { Search, Filter, Minus, Plus, Layers } from 'lucide-react';
 import { updateStickerQuantity } from '@/app/actions/stickers';
 import { getFlagUrl, getFlagEmoji, sortSectionsWithPanamaFirst, PREFIX_TO_FLAG } from '@/lib/flags';
 import { GROUPS, GroupCode, getGroupForSticker } from '@/lib/groups';
@@ -46,6 +46,7 @@ export default function AlbumGrid({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('Todas');
   const [selectedGroup, setSelectedGroup] = useState<GroupCode | 'TODOS'>('TODOS');
+  const [showOnlyRepeated, setShowOnlyRepeated] = useState(false);
 
   const sections = [
     'Todas',
@@ -85,7 +86,10 @@ export default function AlbumGrid({
     
     const matchesSection = selectedSection === 'Todas' || s.section === selectedSection;
     
-    return matchesSearch && matchesGroup && matchesSection;
+    const isRepeated = (inventory[s.id] || 0) > 1;
+    const matchesRepeated = !showOnlyRepeated || isRepeated;
+    
+    return matchesSearch && matchesGroup && matchesSection && matchesRepeated;
   });
 
   // Group by section
@@ -131,6 +135,18 @@ export default function AlbumGrid({
             ))}
           </select>
         </div>
+
+        <button
+          onClick={() => setShowOnlyRepeated(!showOnlyRepeated)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border whitespace-nowrap ${
+            showOnlyRepeated
+              ? 'bg-[#E61D25] text-white border-[#E61D25] shadow-md'
+              : 'bg-[#D1D4D1]/30 dark:bg-white/5 text-[#474A4A] dark:text-white border-[#474A4A]/20 dark:border-white/10 hover:border-[#E61D25]'
+          }`}
+        >
+          <Layers className={`h-4 w-4 ${showOnlyRepeated ? 'animate-pulse' : ''}`} />
+          Solo Repetidas
+        </button>
       </div>
 
       {/* Selector de Grupos */}

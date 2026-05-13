@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Check, Copy } from 'lucide-react';
+import { MessageSquare, Check, Copy, RefreshCw } from 'lucide-react';
 import { getFlagEmoji } from '@/lib/flags';
+import TradeManager from './TradeManager';
 
 type RepeatedSticker = {
   sticker_id: string;
@@ -136,6 +137,8 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <TradeManager repeatedStickers={repeatedStickers} />
+          
           <button
             onClick={() => setShowPreview(!showPreview)}
             className="text-xs font-bold text-[#474A4A] bg-[#D1D4D1]/80 hover:bg-[#D1D4D1] px-3 py-2 rounded-lg border border-[#474A4A]/20 transition-colors"
