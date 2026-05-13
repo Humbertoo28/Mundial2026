@@ -47,21 +47,44 @@ export default async function AdminDashboard() {
         console.error("Admin Dashboard: Error fetching profiles", profilesError);
       }
 
-      // Fetch all user stickers to calculate progress
-      const stickersResult = await supabase
-        .from('user_stickers')
-        .select('user_id, sticker_id, quantity')
-        .limit(10000); // Aumentar límite para evitar truncado
+      // Fetch all user stickers using pagination to bypass the 1000 row limit
+      let allStickersData: any[] = [];
+      let from = 0;
+      const PAGE_SIZE = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('user_stickers')
+          .select('user_id, sticker_id, quantity')
+          .range(from, from + PAGE_SIZE - 1);
         
-      allUserStickers = stickersResult.data;
-      stickersError = stickersResult.error;
+        if (error) {
+          console.error("Admin Dashboard: Error fetching stickers page", error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allStickersData = [...allStickersData, ...data];
+          from += PAGE_SIZE;
+          // If we got less than the page size, we've reached the end
+          if (data.length < PAGE_SIZE) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        
+        // Safety break to prevent infinite loops
+        if (from > 50000) break;
+      }
+      
+      allUserStickers = allStickersData;
 
       // Fetch all trade logs
       const tradeLogsResult = await supabase
         .from('trade_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(1000); // Limitar logs recientes
+        .limit(100); 
       
       tradeLogs = tradeLogsResult.data;
     }
