@@ -227,6 +227,7 @@ export default function TradeManager({
                     className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/30"
                   />
                   <datalist id="trader-suggestions">
+                    <option value="Otro (Fuera del sistema)" />
                     {allProfiles.map(username => (
                       <option key={username} value={`@${username}`} />
                     ))}
