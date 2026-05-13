@@ -100,20 +100,7 @@ export default function TradeListButton({
   const handleShare = async () => {
     if (!tradeText) return;
     
-    // 1. Intentar API de Compartir Nativa (iOS/Android)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Mis Repetidas - Mundial 2026',
-          text: tradeText,
-        });
-        return;
-      } catch (err) {
-        console.log('Compartir nativo cancelado o falló');
-      }
-    }
-    
-    // 2. Fallback: Abrir WhatsApp directamente
+    // Abrir WhatsApp directamente
     const encodedText = encodeURIComponent(tradeText);
     window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
