@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Check, Copy, RefreshCw } from 'lucide-react';
+import { MessageSquare, Check, Copy, RefreshCw, Download } from 'lucide-react';
 import { getFlagEmoji } from '@/lib/flags';
 import TradeManager from './TradeManager';
 
@@ -191,6 +191,30 @@ export default function TradeListButton({
           >
             <MessageSquare className="h-4 w-4" />
             WhatsApp Directo
+          </button>
+
+          {/* PDF Download */}
+          <button
+            onClick={async () => {
+              if (!tradeText) return;
+              const { jsPDF } = await import('jspdf');
+              const doc = new jsPDF();
+              const lines = tradeText.split('\n');
+              let y = 10;
+              lines.forEach(line => {
+                doc.text(line, 10, y);
+                y += 7;
+                if (y > 280) {
+                  doc.addPage();
+                  y = 10;
+                }
+              });
+              doc.save('lista_intercambio.pdf');
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#3CAC3B] text-white hover:bg-[#2d8a2c] transition-all shadow-md active:scale-95"
+          >
+            <Download className="h-4 w-4" />
+            Descargar PDF
           </button>
         </div>
       </div>

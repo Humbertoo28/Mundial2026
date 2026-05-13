@@ -9,8 +9,9 @@ import { getFlagUrl, getSectionDisplayName, sortSectionsWithPanamaFirst } from "
 import { GROUPS, GroupCode, getGroupForSticker } from "@/lib/groups";
 import UsernameSettings from "@/components/UsernameSettings";
 import AvatarSelector from "@/components/AvatarSelector";
+import dynamic from "next/dynamic";
+const PersonalStatsShare = dynamic(() => import("@/components/PersonalStatsShare"), { ssr: false });
 import { getProfile } from "@/app/actions/profile";
-import PersonalStatsShare from "@/components/PersonalStatsShare";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -210,7 +211,9 @@ export default async function Home() {
       </div>
 
       {/* Estadísticas de Intercambio y Compartir */}
-      <PersonalStatsShare stats={stats as any} username={displayName} />
+      {stats && stats.totalTrades !== undefined && (
+        <PersonalStatsShare stats={stats as any} username={displayName} />
+      )}
 
       {/* Buscador de Amigos */}
       <div className="mb-12">
