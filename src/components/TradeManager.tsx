@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
-import { bulkUpdateStickerQuantities } from '@/app/actions/stickers';
+import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Plus, ArrowRight } from 'lucide-react';
+import { executeTrade } from '@/app/actions/stickers';
 import { getSectionDisplayName, getFlagEmoji } from '@/lib/flags';
 
 type RepeatedSticker = {
@@ -20,6 +20,8 @@ export default function TradeManager({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [receivedIds, setReceivedIds] = useState<string[]>([]);
+  const [receivedInput, setReceivedInput] = useState('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -42,30 +44,41 @@ export default function TradeManager({
     }
   };
 
-  const handleBulkUpdate = async () => {
-    if (selectedIds.size === 0) return;
+  const addReceived = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const id = receivedInput.trim().toUpperCase();
+    if (!id) return;
+    if (receivedIds.includes(id)) {
+      setError("Ya agregaste esta figurita");
+      return;
+    }
+    setReceivedIds([...receivedIds, id]);
+    setReceivedInput('');
+    setError(null);
+  };
+
+  const removeReceived = (id: string) => {
+    setReceivedIds(receivedIds.filter(rid => rid !== id));
+  };
+
+  const handleExecuteTrade = async () => {
+    if (selectedIds.size === 0 && receivedIds.length === 0) return;
 
     setError(null);
     setSuccess(false);
 
     startTransition(async () => {
       try {
-        const updates = repeatedStickers
-          .filter(s => selectedIds.has(s.sticker_id))
-          .map(s => ({
-            stickerId: s.sticker_id,
-            quantity: s.quantity - 1 // Restamos una unidad
-          }));
-
-        const result = await bulkUpdateStickerQuantities(updates);
+        const result = await executeTrade(Array.from(selectedIds), receivedIds);
         if (result.success) {
           setSuccess(true);
           setSelectedIds(new Set());
+          setReceivedIds([]);
           setTimeout(() => setSuccess(false), 3000);
           if (onUpdate) onUpdate();
         }
       } catch (err: any) {
-        setError(err.message || "Error al actualizar");
+        setError(err.message || "Error al procesar el intercambio");
       }
     });
   };
@@ -84,7 +97,7 @@ export default function TradeManager({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#1A1A1A] w-full max-w-3xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10">
+      <div className="bg-white dark:bg-[#1A1A1A] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10">
         {/* Header */}
         <div className="p-6 border-b border-[#474A4A]/10 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-[#2A398D] to-[#1e2a6d] text-white">
           <div className="flex items-center gap-3">
@@ -93,7 +106,7 @@ export default function TradeManager({
             </div>
             <div>
               <h2 className="text-xl font-black uppercase italic">Gestor de Intercambio</h2>
-              <p className="text-xs text-white/70 font-bold uppercase tracking-widest">Selecciona las figuritas que ya entregaste</p>
+              <p className="text-xs text-white/70 font-bold uppercase tracking-widest">Registra lo que das y lo que recibes</p>
             </div>
           </div>
           <button 
@@ -105,84 +118,142 @@ export default function TradeManager({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl flex items-center gap-3 text-sm font-bold animate-in slide-in-from-top-2">
-              <AlertCircle className="h-5 w-5" />
-              {error}
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Columna Izquierda: Lo que doy */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-[#2A398D] uppercase italic flex items-center gap-2">
+                <Minus className="h-4 w-4 text-[#E61D25]" />
+                Lo que entrego
+              </h3>
+              <button 
+                onClick={selectAll}
+                className="text-[10px] font-black uppercase text-[#2A398D]/60 hover:text-[#2A398D] underline transition-colors"
+              >
+                {selectedIds.size === repeatedStickers.length ? 'Ninguna' : 'Todas'}
+              </button>
             </div>
-          )}
 
-          {success && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-2xl flex items-center gap-3 text-sm font-bold animate-in slide-in-from-top-2">
-              <Check className="h-5 w-5" />
-              ¡Inventario actualizado correctamente!
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {repeatedStickers.map(s => {
+                const isSelected = selectedIds.has(s.sticker_id);
+                return (
+                  <button
+                    key={s.sticker_id}
+                    onClick={() => toggleSelect(s.sticker_id)}
+                    className={`relative p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center ${
+                      isSelected 
+                        ? 'border-[#E61D25] bg-[#E61D25]/5' 
+                        : 'border-[#474A4A]/10 hover:border-[#E61D25]/30'
+                    }`}
+                  >
+                    <span className="text-[9px] font-bold text-[#474A4A]/40 uppercase truncate w-full">
+                      {getSectionDisplayName(s.section)}
+                    </span>
+                    <span className="text-sm font-black text-[#2A398D]">{s.sticker_id}</span>
+                    <span className="text-[8px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-1.5 py-0.5 rounded-full">
+                      x{s.quantity}
+                    </span>
+                    {isSelected && (
+                      <div className="absolute top-1 right-1 bg-[#E61D25] text-white rounded-full p-0.5">
+                        <Check className="h-2 w-2" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
-
-          <div className="flex items-center justify-between mb-4">
-            <button 
-              onClick={selectAll}
-              className="text-xs font-black uppercase text-[#2A398D] dark:text-[#4C5DBB] hover:underline"
-            >
-              {selectedIds.size === repeatedStickers.length ? 'Desseleccionar todo' : 'Seleccionar todo'}
-            </button>
-            <span className="text-xs font-bold text-[#474A4A]/50">
-              {selectedIds.size} seleccionadas
-            </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {repeatedStickers.map(s => {
-              const isSelected = selectedIds.has(s.sticker_id);
-              return (
-                <button
-                  key={s.sticker_id}
-                  onClick={() => toggleSelect(s.sticker_id)}
-                  className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 group ${
-                    isSelected 
-                      ? 'border-[#2A398D] bg-[#2A398D]/5 shadow-md' 
-                      : 'border-[#474A4A]/10 hover:border-[#2A398D]/30'
-                  }`}
-                >
-                  <div className="absolute top-2 right-2">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isSelected ? 'bg-[#2A398D] border-[#2A398D]' : 'border-[#474A4A]/20'
-                    }`}>
-                      {isSelected && <Check className="h-3 w-3 text-white" />}
+          {/* Columna Derecha: Lo que recibo */}
+          <div className="flex flex-col">
+            <h3 className="font-black text-[#2A398D] uppercase italic mb-4 flex items-center gap-2">
+              <Plus className="h-4 w-4 text-[#3CAC3B]" />
+              Lo que recibo
+            </h3>
+
+            <form onSubmit={addReceived} className="flex gap-2 mb-4">
+              <input 
+                type="text"
+                placeholder="Código (Ej: ARG01)"
+                value={receivedInput}
+                onChange={(e) => setReceivedInput(e.target.value.toUpperCase())}
+                className="flex-1 bg-[#D1D4D1]/20 border border-[#474A4A]/20 rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:border-[#3CAC3B] transition-colors"
+              />
+              <button 
+                type="submit"
+                className="bg-[#3CAC3B] text-white p-2 rounded-xl hover:scale-105 transition-transform shadow-md"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </form>
+
+            <div className="flex-1 bg-[#D1D4D1]/10 rounded-2xl p-4 border-2 border-dashed border-[#474A4A]/10 min-h-[150px]">
+              {receivedIds.length === 0 ? (
+                <p className="text-center text-[#474A4A]/40 text-xs mt-10 font-bold uppercase tracking-widest">
+                  Ingresa los códigos de las figuritas que recibiste
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {receivedIds.map(id => (
+                    <div 
+                      key={id}
+                      className="bg-white border-2 border-[#3CAC3B] text-[#3CAC3B] px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-sm animate-in zoom-in duration-200"
+                    >
+                      {id}
+                      <button 
+                        onClick={() => removeReceived(id)}
+                        className="hover:text-[#E61D25] transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
-                  </div>
-                  <span className="text-[10px] font-black text-[#474A4A]/40 uppercase mb-1">
-                    {getFlagEmoji(s.section)} {s.section}
-                  </span>
-                  <span className="text-lg font-black text-[#2A398D]">{s.sticker_id}</span>
-                  <span className="text-[10px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full">
-                    Tienes x{s.quantity}
-                  </span>
-                </button>
-              );
-            })}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-bold animate-in slide-in-from-top-1">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-center gap-2 text-[10px] font-bold animate-in slide-in-from-top-1">
+                <Check className="h-4 w-4 shrink-0" />
+                ¡Intercambio registrado con éxito!
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[#474A4A]/10 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm">
-            <span className="font-bold text-[#474A4A]">Acción:</span>
-            <span className="ml-2 text-[#474A4A]/70 italic">Se restará 1 unidad a cada seleccionada</span>
+        <div className="p-6 border-t border-[#474A4A]/10 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-[#474A4A]/40 uppercase">Entrego</span>
+              <span className="text-xl font-black text-[#E61D25]">{selectedIds.size}</span>
+            </div>
+            <ArrowRight className="h-6 w-6 text-[#474A4A]/20" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-[#474A4A]/40 uppercase">Recibo</span>
+              <span className="text-xl font-black text-[#3CAC3B]">{receivedIds.length}</span>
+            </div>
           </div>
           
           <button
-            onClick={handleBulkUpdate}
-            disabled={selectedIds.size === 0 || isPending}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm bg-[#E61D25] text-white hover:bg-[#2A398D] disabled:opacity-50 disabled:grayscale transition-all shadow-lg active:scale-95"
+            onClick={handleExecuteTrade}
+            disabled={(selectedIds.size === 0 && receivedIds.length === 0) || isPending}
+            className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm bg-[#2A398D] text-white hover:bg-[#3CAC3B] disabled:opacity-50 disabled:grayscale transition-all shadow-xl active:scale-95"
           >
             {isPending ? (
               <RefreshCw className="h-5 w-5 animate-spin" />
             ) : (
-              <Minus className="h-5 w-5" />
+              <RefreshCw className="h-5 w-5" />
             )}
-            Confirmar Entrega ({selectedIds.size})
+            Confirmar Intercambio
           </button>
         </div>
       </div>
