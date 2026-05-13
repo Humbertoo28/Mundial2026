@@ -3,7 +3,7 @@
 import { Download } from 'lucide-react';
 
 type RepeatedSticker = {
-  id: string;
+  sticker_id: string;
   quantity: number;
   section: string;
 };
@@ -25,7 +25,7 @@ export default function RepeatedStickersPdfButton({
     const bySection: Record<string, string[]> = {};
     repeatedStickers.forEach(s => {
       if (!bySection[s.section]) bySection[s.section] = [];
-      const text = s.quantity > 1 ? `${s.id} (x${s.quantity})` : s.id;
+      const text = s.quantity > 1 ? `${s.sticker_id} (x${s.quantity})` : s.sticker_id;
       bySection[s.section].push(text);
     });
 
