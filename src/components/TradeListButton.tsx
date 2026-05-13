@@ -141,7 +141,9 @@ export default function TradeListButton({
           <div>
             <h3 className="font-bold text-[#2A398D] text-lg leading-tight">Lista de Intercambio</h3>
             <p className="text-xs text-[#474A4A]/70">
-              Tienes <span className="font-bold text-[#3CAC3B]">{repeatedStickers.length}</span> figuritas para intercambiar
+              Tienes <span className="font-bold text-[#3CAC3B]">
+                {repeatedStickers.reduce((acc, s) => acc + (s.quantity - 1), 0)}
+              </span> figuritas para intercambiar
             </p>
           </div>
         </div>
