@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getFlagUrl, getSectionDisplayName } from "@/lib/flags";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import MissingStickersPdfButton from "@/components/MissingStickersPdfButton";
+import RepeatedStickersPdfButton from "@/components/RepeatedStickersPdfButton";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -84,6 +86,24 @@ export default async function PublicProfile(props: { params: Promise<{ username:
     .sort((a, b) => b[1].owned - a[1].owned)
     .slice(0, 8);
 
+  // Preparation for PDF buttons
+  const inventoryMap: Record<string, number> = {};
+  userStickers?.forEach(s => {
+    inventoryMap[s.sticker_id.replace(/\s/g, '').toUpperCase()] = s.quantity;
+  });
+
+  const missingStickers = allStickers
+    ?.filter(s => (inventoryMap[s.id.replace(/\s/g, '').toUpperCase()] || 0) === 0)
+    .map(s => s.id) || [];
+
+  const repeatedStickersList = Object.entries(inventoryMap)
+    .filter(([_, qty]) => qty > 1)
+    .map(([id, qty]) => ({
+      sticker_id: id,
+      quantity: qty,
+      section: allStickers?.find(as => as.id.replace(/\s/g, '').toUpperCase() === id)?.section || 'Otros'
+    }));
+
   return (
     <div className="container mx-auto px-4 py-12 animate-in fade-in duration-500">
       <Link href="/" className="inline-flex items-center gap-2 text-[#2A398D] font-bold mb-8 hover:translate-x-1 transition-transform">
@@ -130,6 +150,14 @@ export default async function PublicProfile(props: { params: Promise<{ username:
                 <span className="text-xl font-black text-[#3CAC3B]">{percentage}%</span>
               </div>
             </div>
+
+            {/* PDF Buttons (only for owner) */}
+            {currentUserId === profile.id && (
+              <div className="flex gap-2 mt-4 justify-center md:justify-start animate-in slide-in-from-top-2">
+                <MissingStickersPdfButton missingStickers={missingStickers} username={profile.username} />
+                <RepeatedStickersPdfButton repeatedStickers={repeatedStickersList} username={profile.username} />
+              </div>
+            )}
           </div>
         </div>
       </div>
