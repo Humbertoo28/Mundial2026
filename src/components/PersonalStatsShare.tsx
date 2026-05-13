@@ -25,7 +25,7 @@ export default function PersonalStatsShare({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleShareWhatsApp = () => {
     const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
                  `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
@@ -34,17 +34,41 @@ export default function PersonalStatsShare({
                  `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
                  `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
     
-    if (navigator.share) {
-      navigator.share({
-        title: 'Mis Logros Panini Tracker',
-        text: text,
-        url: 'https://mundialhub.vercel.app'
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    const encodedText = encodeURIComponent(text);
+    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+  };
+
+  const handleShareInstagram = () => {
+    // Instagram no permite compartir texto/link directo desde web.
+    // Lo mejor es copiar al portapapeles y avisar al usuario.
+    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
+                 `👤 Usuario: @${username}\n` +
+                 `📊 Progreso: ${stats.porcentaje}%\n` +
+                 `✅ Conseguidas: ${stats.tengo}\n` +
+                 `🔁 Repetidas: ${stats.repetidas}\n` +
+                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
+                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    
+    // Intentar abrir Instagram
+    window.open('https://www.instagram.com/', '_blank');
+  };
+
+  const handleCopyText = () => {
+    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
+                 `👤 Usuario: @${username}\n` +
+                 `📊 Progreso: ${stats.porcentaje}%\n` +
+                 `✅ Conseguidas: ${stats.tengo}\n` +
+                 `🔁 Repetidas: ${stats.repetidas}\n` +
+                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
+                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -143,14 +167,14 @@ export default function PersonalStatsShare({
               
               <div className="grid grid-cols-2 gap-3">
                 <button 
-                  onClick={handleCopy}
+                  onClick={handleShareInstagram}
                   className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all"
                 >
                   <Share2 className="h-4 w-4" />
                   Instagram
                 </button>
                 <button 
-                  onClick={handleCopy}
+                  onClick={handleShareWhatsApp}
                   className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all"
                 >
                   <MessageSquare className="h-4 w-4" />
@@ -159,7 +183,7 @@ export default function PersonalStatsShare({
               </div>
               
               <button 
-                onClick={handleCopy}
+                onClick={handleCopyText}
                 className="flex items-center justify-center gap-2 text-[#474A4A]/60 font-bold text-xs hover:text-[#2A398D] py-2 transition-colors"
               >
                 {copied ? <Check className="h-3 w-3 text-[#3CAC3B]" /> : <Copy className="h-3 w-3" />}
