@@ -46,41 +46,41 @@ export default function PersonalStatsShare({
     ctx.beginPath(); ctx.arc(1080, 1920, 500, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1.0;
 
-    // Título (Agrandado)
-    ctx.font = 'black italic 80px Arial';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    // Título (Mucho más grande)
+    ctx.font = 'italic 900 120px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textAlign = 'center';
-    ctx.fillText('MI PROGRESO', 540, 350);
+    ctx.fillText('MI PROGRESO', 540, 380);
 
-    ctx.font = '900 italic 320px Arial';
+    ctx.font = 'italic 900 350px Arial';
     ctx.fillStyle = 'white';
-    ctx.fillText(`${stats.porcentaje}%`, 540, 680);
+    ctx.fillText(`${stats.porcentaje}%`, 540, 720);
 
     const drawCard = (y: number, label: string, value: string | number, color?: string) => {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.beginPath(); ctx.roundRect(140, y, 800, 200, 40); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(140, y, 800, 220, 50); ctx.fill();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.lineWidth = 2; ctx.stroke();
+      ctx.lineWidth = 3; ctx.stroke();
       
-      ctx.font = 'bold 35px Arial';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.fillText(label.toUpperCase(), 540, y + 60);
+      ctx.font = 'bold 45px Arial';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillText(label.toUpperCase(), 540, y + 70);
       
-      ctx.font = '900 90px Arial';
+      ctx.font = '900 100px Arial';
       ctx.fillStyle = color || 'white';
-      ctx.fillText(String(value), 540, y + 155);
+      ctx.fillText(String(value), 540, y + 170);
     };
 
-    drawCard(850, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
-    drawCard(1100, 'Repetidas', stats.repetidas, 'white');
-    drawCard(1350, 'Intercambiadas', stats.totalItemsTraded, 'white');
+    drawCard(880, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
+    drawCard(1140, 'Repetidas', stats.repetidas, 'white');
+    drawCard(1400, 'Intercambiadas', stats.totalItemsTraded, 'white');
 
-    ctx.font = 'black italic 80px Arial';
+    ctx.font = 'italic 900 100px Arial';
     ctx.fillStyle = 'white';
-    ctx.fillText(`@${username.toUpperCase()}`, 540, 1700);
-    ctx.font = 'bold 35px Arial';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1770);
+    ctx.fillText(`@${username.toUpperCase()}`, 540, 1720);
+    ctx.font = 'bold 40px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1790);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
