@@ -214,28 +214,32 @@ export default function TradeManager({
             <div className="col-span-full bg-[#2A398D]/5 border border-[#2A398D]/10 rounded-2xl p-4 mb-2">
               <div className="flex items-center gap-3">
                 <div className="bg-[#2A398D] p-2 rounded-lg text-white">
-                  <User className="h-4 w-4" />
+                  <Search className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] font-black text-[#2A398D] uppercase tracking-widest block mb-1">Intercambiando con</label>
-                  <select 
-                    value={traderName === 'Otro (Fuera del sistema)' ? 'Otro (Fuera del sistema)' : (allProfiles.includes(traderName.replace('@', '')) ? traderName : (traderName ? 'custom' : ''))}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'custom' || val === 'Otro (Fuera del sistema)') {
-                        setTraderName('Otro (Fuera del sistema)');
-                      } else {
-                        setTraderName(val);
-                      }
-                    }}
-                    className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Seleccionar usuario...</option>
-                    <option value="Otro (Fuera del sistema)">👤 Otro (Persona fuera del sistema)</option>
-                    {allProfiles.map(username => (
-                      <option key={username} value={`@${username}`}>@ {username}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select 
+                      value={traderName === 'Otro (Fuera del sistema)' ? 'Otro (Fuera del sistema)' : (allProfiles.includes(traderName.replace('@', '')) ? traderName : (traderName ? 'custom' : ''))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'custom' || val === 'Otro (Fuera del sistema)') {
+                          setTraderName('Otro (Fuera del sistema)');
+                        } else {
+                          setTraderName(val);
+                        }
+                      }}
+                      className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] appearance-none cursor-pointer pr-8"
+                    >
+                      <option value="" disabled>Seleccionar usuario...</option>
+                      <option value="Otro (Fuera del sistema)">👤 Otro (Persona fuera del sistema)</option>
+                      {allProfiles.map(username => (
+                        <option key={username} value={`@${username}`}>@ {username}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[#2A398D]/40">
+                      <Search className="h-3 w-3" />
+                    </div>
+                  </div>
                 </div>
               </div>
               
