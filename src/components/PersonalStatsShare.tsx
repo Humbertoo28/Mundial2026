@@ -204,8 +204,8 @@ export default function PersonalStatsShare({
             <RefreshCw className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest">Intercambios</p>
-            <p className="text-xl font-black text-[#2A398D]">{stats.totalTrades}</p>
+            <p className="text-[10px] font-black text-[#474A4A]/40 dark:text-white/60 uppercase tracking-widest">Intercambios</p>
+            <p className="text-xl font-black text-[#2A398D] dark:text-white">{stats.totalTrades}</p>
           </div>
         </div>
 
@@ -214,7 +214,7 @@ export default function PersonalStatsShare({
             <Check className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest">Figuritas</p>
+            <p className="text-[10px] font-black text-[#474A4A]/40 dark:text-white/60 uppercase tracking-widest">Figuritas</p>
             <p className="text-xl font-black text-[#3CAC3B]">{stats.tengo}</p>
           </div>
         </div>
