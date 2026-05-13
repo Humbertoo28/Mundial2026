@@ -130,7 +130,7 @@ export default function TradeManager({
           }
         });
 
-        const result = await executeTrade(givenArray, receivedIds);
+        const result = await executeTrade(givenArray, receivedIds, traderName);
         if (result.success) {
           setSuccess(true);
           const trader = traderName.trim() || 'otro usuario';

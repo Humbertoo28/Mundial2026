@@ -163,7 +163,7 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
   return { success: true };
 }
 
-export async function executeTrade(givenIds: string[], receivedIds: string[]) {
+export async function executeTrade(givenIds: string[], receivedIds: string[], traderName?: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("No autenticado");
   const userId = session.user.id;
@@ -251,6 +251,18 @@ export async function executeTrade(givenIds: string[], receivedIds: string[]) {
 
   const results = await Promise.all(promises);
   if (results.some(r => r.error)) throw new Error("Error al ejecutar el intercambio");
+
+  // Opcional: Registrar log de intercambio (no bloqueante)
+  if (traderName) {
+    supabase.from('trade_logs').insert({
+      user_id: userId,
+      trader_name: traderName,
+      given_ids: givenIds,
+      received_ids: receivedIds
+    }).then(({ error }) => {
+      if (error) console.error("Error saving trade log:", error);
+    });
+  }
 
   revalidatePath('/');
   revalidatePath('/album');

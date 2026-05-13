@@ -10,6 +10,7 @@ import { GROUPS, GroupCode, getGroupForSticker } from "@/lib/groups";
 import UsernameSettings from "@/components/UsernameSettings";
 import AvatarSelector from "@/components/AvatarSelector";
 import { getProfile } from "@/app/actions/profile";
+import PersonalStatsShare from "@/components/PersonalStatsShare";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -58,6 +59,12 @@ export default async function Home() {
     .select('username')
     .not('username', 'is', null);
 
+  // Fetch trade logs for stats
+  const { data: tradeLogs } = await supabase
+    .from('trade_logs')
+    .select('trader_name, given_ids, received_ids')
+    .eq('user_id', userId);
+
   // Fetch user inventory
   const { data: userStickers } = await supabase
     .from('user_stickers')
@@ -88,6 +95,11 @@ export default async function Home() {
       if (qty > 1) repetidas += (qty - 1);
     });
   }
+
+  // Trade Stats calculation
+  const totalTrades = tradeLogs?.length || 0;
+  const uniqueTradersCount = new Set(tradeLogs?.map(log => log.trader_name.toLowerCase())).size;
+  const totalItemsTraded = tradeLogs?.reduce((acc, log) => acc + (log.given_ids?.length || 0) + (log.received_ids?.length || 0), 0) || 0;
 
   // Calculate missing per section and group
   const sectionStats: Record<string, { total: number, missing: number }> = {};
@@ -166,7 +178,10 @@ export default async function Home() {
     tengo,
     faltan,
     repetidas,
-    porcentaje
+    porcentaje,
+    totalTrades,
+    uniqueTradersCount,
+    totalItemsTraded
   };
 
   return (
@@ -198,6 +213,9 @@ export default async function Home() {
       <div className="mb-12">
         <SearchFriends />
       </div>
+
+      {/* Estadísticas de Intercambio y Compartir */}
+      <PersonalStatsShare stats={stats as any} username={displayName} />
 
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
