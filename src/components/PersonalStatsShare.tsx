@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Users, RefreshCw, Trophy, X, MessageSquare, Instagram, Copy, Check } from 'lucide-react';
+import { Share2, Users, RefreshCw, Trophy, X, MessageSquare, Copy, Check } from 'lucide-react';
 
 type Stats = {
   tengo: number;
@@ -128,7 +128,7 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
                   onClick={handleCopy}
                   className="flex items-center justify-center gap-2 bg-[#2A398D] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#1e2a6d] transition-all"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Instagram className="h-4 w-4" />}
+                  {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
                   {copied ? 'Copiado' : 'Instagram'}
                 </button>
                 <button 

@@ -9,8 +9,7 @@ import { getFlagUrl, getSectionDisplayName, sortSectionsWithPanamaFirst } from "
 import { GROUPS, GroupCode, getGroupForSticker } from "@/lib/groups";
 import UsernameSettings from "@/components/UsernameSettings";
 import AvatarSelector from "@/components/AvatarSelector";
-import dynamic from "next/dynamic";
-const PersonalStatsShare = dynamic(() => import("@/components/PersonalStatsShare"), { ssr: false });
+import PersonalStatsShare from "@/components/PersonalStatsShare";
 import MissingStickersPdfButton from "@/components/MissingStickersPdfButton";
 import { getProfile } from "@/app/actions/profile";
 
