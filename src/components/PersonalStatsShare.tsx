@@ -25,15 +25,13 @@ export default function PersonalStatsShare({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleDownloadImage = async () => {
-    // Generar una imagen usando Canvas
+  const generateImageFile = async (): Promise<File | null> => {
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1920;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
 
-    // Fondo degradado
     const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
     gradient.addColorStop(0, '#2A398D');
     gradient.addColorStop(0.5, '#1e2a6d');
@@ -41,7 +39,6 @@ export default function PersonalStatsShare({
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    // Decoraciones (círculos difuminados)
     ctx.globalAlpha = 0.2;
     ctx.fillStyle = '#3CAC3B';
     ctx.beginPath(); ctx.arc(0, 0, 500, 0, Math.PI * 2); ctx.fill();
@@ -49,78 +46,111 @@ export default function PersonalStatsShare({
     ctx.beginPath(); ctx.arc(1080, 1920, 500, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1.0;
 
-    // Título
-    ctx.font = 'black italic 40px Arial';
+    // Título (Agrandado)
+    ctx.font = 'black italic 80px Arial';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.textAlign = 'center';
-    ctx.fillText('MI PROGRESO', 540, 400);
+    ctx.fillText('MI PROGRESO', 540, 350);
 
-    // Porcentaje
-    ctx.font = '900 italic 280px Arial';
+    ctx.font = '900 italic 320px Arial';
     ctx.fillStyle = 'white';
-    ctx.fillText(`${stats.porcentaje}%`, 540, 700);
+    ctx.fillText(`${stats.porcentaje}%`, 540, 680);
 
-    // Tarjetas de Datos
     const drawCard = (y: number, label: string, value: string | number, color?: string) => {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.beginPath(); ctx.roundRect(140, y, 800, 200, 40); ctx.fill();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.lineWidth = 2; ctx.stroke();
       
-      ctx.font = 'bold 30px Arial';
+      ctx.font = 'bold 35px Arial';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.fillText(label.toUpperCase(), 540, y + 60);
       
-      ctx.font = '900 80px Arial';
+      ctx.font = '900 90px Arial';
       ctx.fillStyle = color || 'white';
-      ctx.fillText(String(value), 540, y + 150);
+      ctx.fillText(String(value), 540, y + 155);
     };
 
     drawCard(850, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
     drawCard(1100, 'Repetidas', stats.repetidas, 'white');
     drawCard(1350, 'Intercambiadas', stats.totalItemsTraded, 'white');
 
-    // Footer
-    ctx.font = 'black italic 60px Arial';
+    ctx.font = 'black italic 80px Arial';
     ctx.fillStyle = 'white';
     ctx.fillText(`@${username.toUpperCase()}`, 540, 1700);
-    ctx.font = 'bold 30px Arial';
+    ctx.font = 'bold 35px Arial';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1760);
+    ctx.fillText('MUNDIAL2026-INDOL.VERCEL.APP', 540, 1770);
 
-    // Descargar
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(null);
+        const file = new File([blob], `logros_panini_${username}.png`, { type: 'image/png' });
+        resolve(file);
+      }, 'image/png');
+    });
+  };
+
+  const handleDownloadImage = async () => {
+    const file = await generateImageFile();
+    if (!file) return;
+    
     const link = document.createElement('a');
-    link.download = `logros_panini_${username}.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.download = file.name;
+    link.href = URL.createObjectURL(file);
     link.click();
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
+    const file = await generateImageFile();
     const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
-                 `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
-                 `✅ Conseguidas: ${stats.tengo}\n` +
-                 `🔁 Repetidas: ${stats.repetidas}\n` +
-                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
-                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
-    
-    const encodedText = encodeURIComponent(text);
-    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+                 `✅ Conseguidas: ${stats.tengo}\n\n` +
+                 `¡Únete! mundial2026-indol.vercel.app`;
+
+    if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Mis Logros Panini Tracker',
+          text: text,
+        });
+      } catch (err) {
+        console.error("Error sharing file:", err);
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+      }
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    }
   };
 
-  const handleShareInstagram = () => {
+  const handleShareInstagram = async () => {
+    const file = await generateImageFile();
     const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
-                 `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
-                 `✅ Conseguidas: ${stats.tengo}\n` +
-                 `🔁 Repetidas: ${stats.repetidas}\n` +
-                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
-                 `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
+                 `✅ Conseguidas: ${stats.tengo}\n\n` +
+                 `¡Únete! mundial2026-indol.vercel.app`;
 
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    window.open('https://www.instagram.com/', '_blank');
+    if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Mis Logros Panini Tracker',
+          text: text,
+        });
+      } catch (err) {
+        console.error("Error sharing file:", err);
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        window.open('https://www.instagram.com/', '_blank');
+      }
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      window.open('https://www.instagram.com/', '_blank');
+    }
   };
 
   const handleCopyText = () => {
