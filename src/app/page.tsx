@@ -52,6 +52,12 @@ export default async function Home() {
     .from('stickers')
     .select('id, name, section');
 
+  // Fetch all profiles for trader suggestions
+  const { data: allProfiles } = await supabase
+    .from('profiles')
+    .select('username')
+    .not('username', 'is', null);
+
   // Fetch user inventory
   const { data: userStickers } = await supabase
     .from('user_stickers')
@@ -356,6 +362,7 @@ export default async function Home() {
         <TradeListButton 
           repeatedStickers={repeatedStickers} 
           allStickers={allStickers || []} 
+          allProfiles={allProfiles?.map(p => p.username) || []}
         />
       </div>
       

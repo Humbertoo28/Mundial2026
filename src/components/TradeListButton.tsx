@@ -14,10 +14,12 @@ type RepeatedSticker = {
 
 export default function TradeListButton({ 
   repeatedStickers,
-  allStickers
+  allStickers,
+  allProfiles = []
 }: { 
   repeatedStickers: RepeatedSticker[];
   allStickers: { id: string, name: string, section: string }[];
+  allProfiles?: string[];
 }) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -152,6 +154,7 @@ export default function TradeListButton({
           <TradeManager 
             repeatedStickers={repeatedStickers} 
             allStickers={allStickers} 
+            allProfiles={allProfiles}
           />
           
           <button

@@ -16,10 +16,12 @@ type RepeatedSticker = {
 export default function TradeManager({ 
   repeatedStickers,
   allStickers,
+  allProfiles = [],
   onUpdate 
 }: { 
   repeatedStickers: RepeatedSticker[];
   allStickers: { id: string, name: string, section: string }[];
+  allProfiles?: string[];
   onUpdate?: () => void;
 }) {
   const router = useRouter();
@@ -27,6 +29,8 @@ export default function TradeManager({
   const [activeTab, setActiveTab] = useState<'give' | 'receive'>('give');
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [receivedIds, setReceivedIds] = useState<string[]>([]);
+  const [traderName, setTraderName] = useState('');
+  const [lastTrader, setLastTrader] = useState('');
   const [receivedInput, setReceivedInput] = useState('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -129,13 +133,16 @@ export default function TradeManager({
         const result = await executeTrade(givenArray, receivedIds);
         if (result.success) {
           setSuccess(true);
+          const trader = traderName.trim() || 'otro usuario';
+          setLastTrader(trader);
           setSelectedQuantities({});
           setReceivedIds([]);
+          setTraderName('');
           router.refresh();
           setTimeout(() => {
             setSuccess(false);
             setIsOpen(false);
-          }, 2000);
+          }, 3000);
           if (onUpdate) onUpdate();
         }
       } catch (err: any) {
@@ -203,6 +210,31 @@ export default function TradeManager({
         <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
             
+            {/* Información del Intercambio */}
+            <div className="col-span-full bg-[#2A398D]/5 border border-[#2A398D]/10 rounded-2xl p-4 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#2A398D] p-2 rounded-lg text-white">
+                  <User className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-black text-[#2A398D] uppercase tracking-widest block mb-1">Intercambiando con</label>
+                  <input 
+                    type="text" 
+                    placeholder="Escribe el nombre o @usuario de la otra persona..." 
+                    value={traderName}
+                    onChange={(e) => setTraderName(e.target.value)}
+                    list="trader-suggestions"
+                    className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/30"
+                  />
+                  <datalist id="trader-suggestions">
+                    {allProfiles.map(username => (
+                      <option key={username} value={`@${username}`} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
             {/* Columna Izquierda: Lo que doy */}
             <div className={`${activeTab === 'give' ? 'block' : 'hidden'} lg:block h-full flex flex-col`}>
               <div className="flex items-center justify-between mb-4">
@@ -419,7 +451,7 @@ export default function TradeManager({
           {success && (
             <div className="p-3 bg-green-50 border border-green-100 text-green-600 rounded-xl flex items-center gap-2 text-[10px] font-black animate-in slide-in-from-top-1">
               <Check className="h-4 w-4 shrink-0" />
-              ¡Intercambio registrado con éxito!
+              ¡Intercambio con <span className="underline">{lastTrader}</span> registrado con éxito!
             </div>
           )}
 
