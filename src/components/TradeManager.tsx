@@ -61,19 +61,24 @@ export default function TradeManager({
     const input = receivedInput.trim().toUpperCase();
     if (!input) return;
     
+    // Búsqueda jerárquica para mejor precisión
     const foundSticker = allStickers.find(s => 
-      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
-      s.name.toUpperCase() === input
+      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || // ID exacto
+      s.name.toUpperCase() === input // Nombre exacto
+    ) || allStickers.find(s => 
+      s.name.toUpperCase().startsWith(input) // Empieza por...
+    ) || allStickers.find(s => 
+      s.name.toUpperCase().includes(input) // Contiene...
     );
 
     if (!foundSticker) {
-      setError("No se encontró la figurita");
+      setError("No se encontró ninguna figurita con ese nombre o código");
       return;
     }
 
     const id = foundSticker.id;
     if (receivedIds.includes(id)) {
-      setError("Ya agregaste esta figurita");
+      setError("Ya agregaste a este jugador");
       return;
     }
     setReceivedIds([...receivedIds, id]);
@@ -261,7 +266,17 @@ export default function TradeManager({
                 <div className="min-h-[20px] mt-2 ml-4">
                   {(() => {
                     const input = receivedInput.trim().toUpperCase();
-                    const match = stickerMap[input] || allStickers.find(s => s.name.toUpperCase() === input || s.id === input);
+                    if (!input || input.length < 2) return null;
+
+                    const match = allStickers.find(s => 
+                      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
+                      s.name.toUpperCase() === input
+                    ) || allStickers.find(s => 
+                      s.name.toUpperCase().startsWith(input)
+                    ) || allStickers.find(s => 
+                      s.name.toUpperCase().includes(input)
+                    );
+
                     if (match) {
                       return (
                         <div className="flex items-center gap-2 text-[10px] font-black text-[#3CAC3B] animate-in fade-in">
