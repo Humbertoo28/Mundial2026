@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LogIn, LogOut, LayoutDashboard, Grid, RefreshCw, Database } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, Grid, RefreshCw, Database, Trophy } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import ThemeToggle from './ThemeToggle';
 import { getProfile } from '@/app/actions/profile';
@@ -34,6 +34,10 @@ export default async function Navbar() {
               <Link href="/album" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
                 <Grid className="h-3 w-3 sm:h-4 sm:w-4" />
                 Mi Álbum
+              </Link>
+              <Link href="/ranking" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
+                <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
+                Ranking
               </Link>
               {session.user.email === (process.env.ADMIN_EMAIL || "humbertolandero78@gmail.com") && (
                 <Link href="/admin" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-[#FFD700] hover:text-white transition-colors bg-white/10 px-2 sm:px-3 py-1 rounded-lg whitespace-nowrap">
