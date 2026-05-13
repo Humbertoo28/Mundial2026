@@ -50,7 +50,7 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
     // 3. Título
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'black italic 110px Inter, system-ui';
+    ctx.font = 'italic 900 140px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('TOP 5 COLECCIONISTAS', canvas.width / 2, 280);
     
@@ -138,7 +138,8 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
       ctx.fillText(`@${user.username.toUpperCase()}`, 450, yOffset + 100);
 
       // Barra de progreso
-      const barWidth = 400;
+      // Barra de progreso
+      const barWidth = 350; // Reducir para dar espacio al porcentaje
       const barHeight = 25;
       const filledWidth = (user.porcentaje / 100) * barWidth;
       
@@ -150,14 +151,14 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
       // Porcentaje (Texto más grande para que se vea)
       ctx.fillStyle = isFirst ? '#FFD700' : '#FFFFFF';
-      ctx.font = '900 50px Inter';
+      ctx.font = 'italic 900 65px Inter, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`${user.porcentaje}%`, 930, yOffset + 140);
+      ctx.fillText(`${user.porcentaje}%`, 950, yOffset + 155);
       
       // Conteo debajo (pequeño)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.font = '700 25px Inter';
-      ctx.fillText(`${user.tengo} / ${user.total}`, 930, yOffset + 180);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = '900 30px Inter, sans-serif';
+      ctx.fillText(`${user.tengo} / ${user.total}`, 950, yOffset + 205);
 
       yOffset += rowHeight + 30;
     }
