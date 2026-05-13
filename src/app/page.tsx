@@ -11,6 +11,7 @@ import UsernameSettings from "@/components/UsernameSettings";
 import AvatarSelector from "@/components/AvatarSelector";
 import dynamic from "next/dynamic";
 const PersonalStatsShare = dynamic(() => import("@/components/PersonalStatsShare"), { ssr: false });
+import MissingStickersPdfButton from "@/components/MissingStickersPdfButton";
 import { getProfile } from "@/app/actions/profile";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -143,6 +144,18 @@ export default async function Home() {
       return b[1].missing - a[1].missing;
     });
 
+  // Build missing stickers list
+  const missingStickers: { id: string, name: string, section: string }[] = [];
+  if (allStickers) {
+    allStickers.forEach(sticker => {
+      const idNormal = sticker.id.replace(/\s/g, '').toUpperCase();
+      const isOwned = (inventoryMap[idNormal] || 0) > 0;
+      if (!isOwned) {
+        missingStickers.push(sticker);
+      }
+    });
+  }
+
   // Build repeated stickers list (for the trade list)
   // We need section info for each sticker — join with allStickers
   const stickerSectionMap: Record<string, string> = {};
@@ -233,7 +246,10 @@ export default async function Home() {
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#E61D25]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <div className="text-[#E61D25] dark:text-[#E61D25] mb-3 relative z-10"><PackageOpen className="h-8 w-8 md:h-10 md:w-10" /></div>
           <span className="text-3xl md:text-5xl font-black text-[#474A4A] dark:text-white relative z-10">{stats.faltan}</span>
-          <span className="text-xs md:text-sm text-[#474A4A]/80 dark:text-white/60 font-bold uppercase tracking-wider mt-2 relative z-10">Faltantes</span>
+          <span className="text-xs md:text-sm text-[#474A4A]/80 dark:text-white/60 font-bold uppercase tracking-wider mt-2 relative z-10 text-center flex flex-col items-center gap-2">
+            Faltantes
+            <MissingStickersPdfButton missingStickers={missingStickers} />
+          </span>
         </div>
 
         <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
