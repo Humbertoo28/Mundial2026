@@ -241,9 +241,40 @@ export default function TradeManager({
                           Tienes x{s.quantity}
                         </span>
                         {isSelected && (
-                          <span className={`text-[9px] font-black text-white px-2 py-0.5 rounded-full transition-all duration-300 ${qtySelected > 1 ? 'bg-[#E61D25] animate-pulse' : 'bg-[#2A398D]'}`}>
-                            Das x{qtySelected}
-                          </span>
+                          <div className="flex items-center bg-[#2A398D] rounded-full overflow-hidden ml-auto animate-in zoom-in duration-200">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newQuants = { ...selectedQuantities };
+                                if (qtySelected > 1) {
+                                  newQuants[s.sticker_id] = qtySelected - 1;
+                                } else {
+                                  delete newQuants[s.sticker_id];
+                                }
+                                setSelectedQuantities(newQuants);
+                              }}
+                              className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-r border-white/10"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="px-2 py-1 text-[10px] font-black text-white min-w-[40px] text-center">
+                              Das x{qtySelected}
+                            </span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (qtySelected < s.quantity) {
+                                  setSelectedQuantities({
+                                    ...selectedQuantities,
+                                    [s.sticker_id]: qtySelected + 1
+                                  });
+                                }
+                              }}
+                              className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-l border-white/10"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
                         )}
                       </div>
                       {isSelected && (
