@@ -110,9 +110,9 @@ export default async function PublicProfile(props: { params: Promise<{ username:
 
   return (
     <div className="container mx-auto px-4 py-12 animate-in fade-in duration-500 min-h-screen">
-      <Link href="/" className="inline-flex items-center gap-2 text-[#2A398D] dark:text-[#4C5DBB] font-bold mb-8 hover:translate-x-1 transition-transform">
+      <Link href="/ranking" className="inline-flex items-center gap-2 text-[#2A398D] dark:text-[#4C5DBB] font-bold mb-8 hover:translate-x-1 transition-transform">
         <ArrowLeft className="h-4 w-4" />
-        Volver a mi Dashboard
+        Volver al Ranking
       </Link>
 
       <div className="bg-white dark:bg-[#0D0D0D] border-2 border-[#2A398D]/10 dark:border-white/5 rounded-3xl p-8 shadow-xl mb-12 relative overflow-hidden">
