@@ -18,7 +18,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <SessionProvider>
         {loading ? (
-          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#D1D4D1] dark:bg-[#1A1A1A] transition-opacity duration-500">
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#D1D4D1] dark:bg-[#000000] transition-opacity duration-500">
             <div className="relative">
               <div className="absolute inset-0 bg-[#2A398D] blur-3xl opacity-20 animate-pulse rounded-full"></div>
               <img 

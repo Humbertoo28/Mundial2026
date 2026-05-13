@@ -121,7 +121,7 @@ export default function AlbumGrid({
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Filtros */}
-      <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-4 rounded-2xl mb-8 flex flex-col md:flex-row gap-4 items-center sticky top-20 z-40 shadow-md">
+      <div className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 p-4 rounded-2xl mb-8 flex flex-col md:flex-row gap-4 items-center sticky top-20 z-40 shadow-md">
         {/* Buscador */}
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#474A4A]/50 dark:text-white/30 h-5 w-5" />
@@ -145,7 +145,7 @@ export default function AlbumGrid({
             }}
           >
             {sections.map(sec => (
-              <option key={sec} value={sec} className="dark:bg-[#262626]">
+              <option key={sec} value={sec} className="dark:bg-[#0D0D0D]">
                 {sec === 'Todas' ? '🌍 Todas las Selecciones' : getSectionDisplayName(sec)}
               </option>
             ))}
@@ -196,7 +196,7 @@ export default function AlbumGrid({
             className={`px-6 py-2 rounded-full font-bold transition-all whitespace-nowrap border ${
               selectedGroup === 'TODOS'
                 ? 'bg-[#2A398D] text-white border-[#2A398D] shadow-md'
-                : 'bg-white dark:bg-[#262626] text-[#474A4A] dark:text-white/80 border-[#474A4A]/20 dark:border-white/10 hover:border-[#2A398D]'
+                : 'bg-white dark:bg-[#0D0D0D] text-[#474A4A] dark:text-white/80 border-[#474A4A]/20 dark:border-white/10 hover:border-[#2A398D]'
             }`}
           >
             TODOS LOS GRUPOS
@@ -211,7 +211,7 @@ export default function AlbumGrid({
               className={`px-6 py-2 rounded-full font-bold transition-all whitespace-nowrap border ${
                 selectedGroup === group
                   ? 'bg-[#2A398D] text-white border-[#2A398D] shadow-md'
-                  : 'bg-white dark:bg-[#262626] text-[#474A4A] dark:text-white/80 border-[#474A4A]/20 dark:border-white/10 hover:border-[#2A398D]'
+                  : 'bg-white dark:bg-[#0D0D0D] text-[#474A4A] dark:text-white/80 border-[#474A4A]/20 dark:border-white/10 hover:border-[#2A398D]'
               }`}
             >
               GRUPO {group}
@@ -304,7 +304,7 @@ export default function AlbumGrid({
                 </h2>
                 <div className="flex-1 h-px bg-[#474A4A]/20" />
                 <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold text-[#474A4A]/60 dark:text-white/60 bg-white dark:bg-[#262626] border border-[#474A4A]/10 dark:border-white/10 px-3 py-1 rounded-full whitespace-nowrap">
+                  <span className="text-sm font-bold text-[#474A4A]/60 dark:text-white/60 bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/10 dark:border-white/10 px-3 py-1 rounded-full whitespace-nowrap">
                     {sectionStickers.length} {sectionStickers.length === 1 ? 'figurita' : 'figuritas'}
                   </span>
                   {showOnlyRepeated && (
@@ -326,7 +326,7 @@ export default function AlbumGrid({
                   return (
                     <div
                       key={sticker.id}
-                      className={`relative bg-white dark:bg-[#262626] border rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] shadow-sm ${
+                      className={`relative bg-white dark:bg-[#0D0D0D] border rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] shadow-sm ${
                         isMissing
                           ? 'border-[#474A4A]/30 dark:border-white/10 opacity-80 grayscale-[0.5]'
                           : isRepeated
@@ -379,7 +379,7 @@ export default function AlbumGrid({
                         <button
                           onClick={() => updateQuantity(sticker.id, -1)}
                           disabled={qty === 0}
-                          className="flex-1 p-1.5 flex justify-center items-center rounded-lg bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 text-[#474A4A] dark:text-white hover:text-white hover:bg-[#E61D25] hover:border-[#E61D25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="flex-1 p-1.5 flex justify-center items-center rounded-lg bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 text-[#474A4A] dark:text-white hover:text-white hover:bg-[#E61D25] hover:border-[#E61D25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           <Minus className="h-4 w-4" />
                         </button>

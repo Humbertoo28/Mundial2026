@@ -195,28 +195,28 @@ export default async function AdminDashboard() {
 
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <Users className="h-8 w-8 text-[#2A398D] mb-2 relative z-10" />
           <p className="text-3xl font-black text-[#2A398D] dark:text-white relative z-10">{totalUsers}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Usuarios</p>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#3CAC3B]/10 shadow-xl relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] p-6 rounded-3xl border border-[#3CAC3B]/10 shadow-xl relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#3CAC3B]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <Star className="h-8 w-8 text-[#3CAC3B] mb-2 relative z-10" />
           <p className="text-3xl font-black text-[#3CAC3B] relative z-10">{totalStickersPlatform}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Figuritas Circulando</p>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#E61D25]/10 shadow-xl relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] p-6 rounded-3xl border border-[#E61D25]/10 shadow-xl relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#E61D25]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <RefreshCw className="h-8 w-8 text-[#E61D25] mb-2 relative z-10" />
           <p className="text-3xl font-black text-[#E61D25] relative z-10">{totalTrades}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Intercambios</p>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <Trophy className="h-8 w-8 text-[#2A398D] mb-2 relative z-10" />
           <p className="text-3xl font-black text-[#2A398D] dark:text-white relative z-10">{totalMovedItems}</p>
@@ -226,7 +226,7 @@ export default async function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Lista de Usuarios */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#262626] rounded-3xl border border-[#2A398D]/10 dark:border-white/5 shadow-2xl overflow-hidden">
+        <div className="lg:col-span-2 bg-white dark:bg-[#0D0D0D] rounded-3xl border border-[#2A398D]/10 dark:border-white/5 shadow-2xl overflow-hidden">
           <div className="p-6 border-b border-[#2A398D]/10 dark:border-white/5 bg-[#2A398D]/5 flex items-center justify-between">
             <h2 className="text-xl font-black text-[#2A398D] dark:text-white uppercase italic">Ranking</h2>
             <ExportDataButton data={userStats as any} />
@@ -275,7 +275,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Actividad Reciente */}
-        <div className="bg-white dark:bg-[#262626] rounded-3xl border border-[#E61D25]/10 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-[#0D0D0D] rounded-3xl border border-[#E61D25]/10 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
           <div className="p-6 border-b border-[#E61D25]/10 dark:border-white/5 bg-[#E61D25]/5">
             <h2 className="text-xl font-black text-[#E61D25] uppercase italic">Actividad</h2>
           </div>

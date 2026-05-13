@@ -6,8 +6,8 @@ import { LogOut, ArrowLeft } from "lucide-react";
 
 export default function SignOutPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#D1D4D1] dark:bg-[#1A1A1A] px-4">
-      <div className="max-w-md w-full bg-white dark:bg-[#262626] rounded-3xl p-8 shadow-2xl border border-[#2A398D]/10 dark:border-white/5 text-center animate-in fade-in zoom-in duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-[#D1D4D1] dark:bg-[#000000] px-4">
+      <div className="max-w-md w-full bg-white dark:bg-[#0D0D0D] rounded-3xl p-8 shadow-2xl border border-[#2A398D]/10 dark:border-white/5 text-center animate-in fade-in zoom-in duration-300">
         <div className="w-20 h-20 bg-[#E61D25]/10 rounded-full flex items-center justify-center mx-auto mb-6">
           <LogOut className="h-10 w-10 text-[#E61D25]" />
         </div>

@@ -74,7 +74,7 @@ export default function ExportDataButton({ data }: { data: UserStat[] }) {
             className="fixed inset-0 z-10" 
             onClick={() => setIsOpen(false)} 
           />
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-2xl border border-[#2A398D]/10 dark:border-white/5 z-20 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#000000] rounded-2xl shadow-2xl border border-[#2A398D]/10 dark:border-white/5 z-20 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
             <button
               onClick={exportToXLSX}
               className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#3CAC3B]/10 dark:hover:bg-white/5 transition-colors group"

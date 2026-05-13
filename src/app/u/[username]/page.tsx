@@ -109,15 +109,15 @@ export default async function PublicProfile(props: { params: Promise<{ username:
     }));
 
   return (
-    <div className="container mx-auto px-4 py-12 animate-in fade-in duration-500">
-      <Link href="/" className="inline-flex items-center gap-2 text-[#2A398D] font-bold mb-8 hover:translate-x-1 transition-transform">
+    <div className="container mx-auto px-4 py-12 animate-in fade-in duration-500 min-h-screen">
+      <Link href="/" className="inline-flex items-center gap-2 text-[#2A398D] dark:text-[#4C5DBB] font-bold mb-8 hover:translate-x-1 transition-transform">
         <ArrowLeft className="h-4 w-4" />
         Volver a mi Dashboard
       </Link>
 
-      <div className="bg-white border-2 border-[#2A398D]/10 rounded-3xl p-8 shadow-xl mb-12 relative overflow-hidden">
+      <div className="bg-white dark:bg-[#0D0D0D] border-2 border-[#2A398D]/10 dark:border-white/5 rounded-3xl p-8 shadow-xl mb-12 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10">
-          <Trophy className="w-32 h-32 text-[#2A398D]" />
+          <Trophy className="w-32 h-32 text-[#2A398D] dark:text-white" />
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
@@ -133,7 +133,7 @@ export default async function PublicProfile(props: { params: Promise<{ username:
           </div>
 
           <div className="text-center md:text-left">
-            <h1 className="text-4xl font-black text-[#2A398D] uppercase tracking-tighter italic">
+            <h1 className="text-4xl font-black text-[#2A398D] dark:text-white uppercase tracking-tighter italic">
               @{profile.username}
             </h1>
             <p className="text-[#474A4A]/60 font-bold uppercase tracking-widest text-sm mb-4">
@@ -168,19 +168,19 @@ export default async function PublicProfile(props: { params: Promise<{ username:
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div>
-          <h2 className="text-2xl font-black text-[#2A398D] uppercase italic mb-6">Mejores Selecciones</h2>
+          <h2 className="text-2xl font-black text-[#2A398D] dark:text-white uppercase italic mb-6">Mejores Selecciones</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {topSections.map(([section, stats]) => {
               const perc = Math.round((stats.owned / stats.total) * 100);
               return (
-                <div key={section} className="bg-white border border-[#474A4A]/10 p-4 rounded-2xl shadow-sm">
+                <div key={section} className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/10 dark:border-white/5 p-4 rounded-2xl shadow-sm">
                   <div className="flex items-center gap-3 mb-3">
                     {getFlagUrl(section) ? (
                       <img src={getFlagUrl(section)!} className="w-6 h-6 object-cover rounded-full border border-[#474A4A]/10" alt="" />
                     ) : (
-                      <div className="w-6 h-6 bg-[#D1D4D1] rounded-full flex items-center justify-center text-[10px]">🏆</div>
+                      <div className="w-6 h-6 bg-[#D1D4D1] dark:bg-white/10 rounded-full flex items-center justify-center text-[10px]">🏆</div>
                     )}
-                    <span className="font-bold text-[#2A398D] text-sm uppercase">{getSectionDisplayName(section)}</span>
+                    <span className="font-bold text-[#2A398D] dark:text-white/80 text-sm uppercase">{getSectionDisplayName(section)}</span>
                   </div>
                   <div className="w-full bg-[#D1D4D1]/30 h-2 rounded-full overflow-hidden">
                     <div className="h-full bg-[#2A398D] transition-all" style={{ width: `${perc}%` }} />
@@ -195,12 +195,12 @@ export default async function PublicProfile(props: { params: Promise<{ username:
           </div>
         </div>
 
-        <div className="bg-white border-2 border-[#E61D25]/10 rounded-3xl p-8 shadow-lg">
+        <div className="bg-white dark:bg-[#0D0D0D] border-2 border-[#E61D25]/10 dark:border-white/5 rounded-3xl p-8 shadow-lg">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-[#E61D25] rounded-xl text-white">
               <Layers className="h-5 w-5" />
             </div>
-            <h2 className="text-2xl font-black text-[#2A398D] uppercase italic">Repetidas para Intercambio</h2>
+            <h2 className="text-2xl font-black text-[#2A398D] dark:text-white uppercase italic">Repetidas para Intercambio</h2>
           </div>
 
           {currentUserId && repetidasCount > 0 && (

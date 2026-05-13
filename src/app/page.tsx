@@ -239,14 +239,14 @@ export default async function Home() {
 
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#3CAC3B]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <div className="text-[#3CAC3B] mb-3 relative z-10"><CheckCircle className="h-8 w-8 md:h-10 md:w-10" /></div>
           <span className="text-3xl md:text-5xl font-black text-[#474A4A] dark:text-white relative z-10">{stats.tengo}</span>
           <span className="text-xs md:text-sm text-[#474A4A]/80 dark:text-white/60 font-bold uppercase tracking-wider mt-2 relative z-10">Conseguidas</span>
         </div>
         
-        <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#E61D25]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <div className="text-[#E61D25] dark:text-[#E61D25] mb-3 relative z-10"><PackageOpen className="h-8 w-8 md:h-10 md:w-10" /></div>
           <span className="text-3xl md:text-5xl font-black text-[#474A4A] dark:text-white relative z-10">{stats.faltan}</span>
@@ -256,7 +256,7 @@ export default async function Home() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
           <div className="text-[#2A398D] dark:text-[#4C5DBB] mb-3 relative z-10"><Layers className="h-8 w-8 md:h-10 md:w-10" /></div>
           <span className="text-3xl md:text-5xl font-black text-[#474A4A] dark:text-white relative z-10">{stats.repetidas}</span>
@@ -266,7 +266,7 @@ export default async function Home() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/20 dark:border-white/10 p-6 rounded-2xl flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow">
           <div className="relative h-24 w-24 md:h-32 md:w-32">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
               <path
@@ -309,7 +309,7 @@ export default async function Home() {
             const isNearComplete = percentage > 80;
             
             return (
-              <div key={group} className="bg-white border border-[#474A4A]/10 p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
+              <div key={group} className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/10 dark:border-white/10 p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-black text-[#2A398D] text-sm tracking-tight">GRUPO {group}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -349,9 +349,9 @@ export default async function Home() {
               const isPanama = section.toUpperCase() === 'PANAMA';
               
               return (
-                <div key={section} className={`bg-white border p-4 rounded-xl shadow-sm flex flex-col justify-between transition-all hover:scale-105 ${
+                <div key={section} className={`bg-white dark:bg-[#0D0D0D] border p-4 rounded-xl shadow-sm flex flex-col justify-between transition-all hover:scale-105 ${
                   isPanama ? 'border-[#E61D25] shadow-[#E61D25]/10' :
-                  isAlmostComplete ? 'border-[#3CAC3B]/30' : 'border-[#474A4A]/20'
+                  isAlmostComplete ? 'border-[#3CAC3B]/30' : 'border-[#474A4A]/20 dark:border-white/10'
                 }`}>
                   <div className="flex items-center gap-2 mb-2">
                     {getFlagUrl(section) ? (

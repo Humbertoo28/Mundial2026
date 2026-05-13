@@ -20,13 +20,13 @@
 }
 
 .dark {
-  --color-bg:        #1A1A1A;  /* Fondo general oscuro */
+  --color-bg:        #000000;  /* Fondo Negro Puro */
   --color-navy:      #4C5DBB;  /* Azul un poco más claro para contraste */
   --color-green:     #4ADE80;  /* Verde más brillante */
   --color-red:       #F87171;  /* Rojo más suave */
   --color-dark:      #FFFFFF;  /* Texto principal BLANCO */
-  --color-white:     #FFFFFF;  /* ESTE ERA EL ERROR - EL BLANCO SIEMPRE DEBE SER BLANCO */
-  --color-card-bg:   #262626;  /* Fondo de tarjeta oscuro */
+  --color-white:     #FFFFFF;  
+  --color-card-bg:   #0D0D0D;  /* Fondo de tarjeta casi negro */
   --color-border:    rgba(255, 255, 255, 0.1);
   --color-input-bg:  rgba(255, 255, 255, 0.05);
 }

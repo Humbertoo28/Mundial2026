@@ -15,7 +15,7 @@ export default function SearchFriends() {
   };
 
   return (
-    <div className="bg-white dark:bg-[#262626] border border-[#2A398D]/20 dark:border-white/10 p-6 rounded-3xl shadow-sm overflow-hidden relative group">
+    <div className="bg-white dark:bg-[#0D0D0D] border border-[#2A398D]/20 dark:border-white/10 p-6 rounded-3xl shadow-sm overflow-hidden relative group">
       <div className="absolute -right-12 -bottom-12 w-32 h-32 bg-[#2A398D]/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
       
       <div className="relative z-10">

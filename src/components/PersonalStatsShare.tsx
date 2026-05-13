@@ -199,7 +199,7 @@ export default function PersonalStatsShare({
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white dark:bg-[#262626] border border-[#2A398D]/10 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#2A398D]/10 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
           <div className="bg-[#2A398D]/10 p-3 rounded-xl text-[#2A398D]">
             <RefreshCw className="h-6 w-6" />
           </div>
@@ -209,7 +209,7 @@ export default function PersonalStatsShare({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] border border-[#3CAC3B]/10 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+        <div className="bg-white dark:bg-[#0D0D0D] border border-[#3CAC3B]/10 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
           <div className="bg-[#3CAC3B]/10 p-3 rounded-xl text-[#3CAC3B]">
             <Check className="h-6 w-6" />
           </div>
@@ -231,7 +231,7 @@ export default function PersonalStatsShare({
       {/* Modal de Compartir */}
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative bg-white dark:bg-[#1A1A1A] w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="relative bg-white dark:bg-[#000000] w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
             
             {/* Botón Cerrar */}
             <button 
@@ -293,7 +293,7 @@ export default function PersonalStatsShare({
             </div>
 
             {/* Acciones del Modal */}
-            <div className="p-6 bg-white dark:bg-[#1A1A1A] border-t border-[#474A4A]/10 dark:border-white/10 flex flex-col gap-3">
+            <div className="p-6 bg-white dark:bg-[#000000] border-t border-[#474A4A]/10 dark:border-white/10 flex flex-col gap-3">
               <button 
                 onClick={handleDownloadImage}
                 className="w-full flex items-center justify-center gap-3 bg-[#3CAC3B] text-white py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-lg hover:scale-[1.02] active:scale-95 transition-all mb-2"

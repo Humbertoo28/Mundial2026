@@ -165,7 +165,7 @@ export default function TradeManager({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#1A1A1A] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10 animate-in slide-in-from-bottom-8 duration-500">
+      <div className="bg-white dark:bg-[#000000] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10 animate-in slide-in-from-bottom-8 duration-500">
         
         {/* Header Compacto */}
         <div className="px-6 py-4 border-b border-[#474A4A]/10 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-[#2A398D] to-[#1e2a6d] text-white shrink-0">
@@ -440,7 +440,7 @@ export default function TradeManager({
                     {receivedIds.map(id => (
                       <div 
                         key={id}
-                        className="bg-white dark:bg-[#262626] border border-[#474A4A]/10 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-sm group animate-in slide-in-from-right-2 duration-300"
+                        className="bg-white dark:bg-[#0D0D0D] border border-[#474A4A]/10 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-sm group animate-in slide-in-from-right-2 duration-300"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div className="bg-[#3CAC3B]/10 p-2 rounded-xl text-[#3CAC3B]">
@@ -467,7 +467,7 @@ export default function TradeManager({
         </div>
 
         {/* Footer Persistente/Sticky */}
-        <div className="px-6 py-6 border-t border-[#474A4A]/10 dark:border-white/10 bg-white dark:bg-[#1A1A1A] flex flex-col gap-4 shrink-0">
+        <div className="px-6 py-6 border-t border-[#474A4A]/10 dark:border-white/10 bg-white dark:bg-[#000000] flex flex-col gap-4 shrink-0">
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-black animate-in shake duration-500">
               <AlertCircle className="h-4 w-4 shrink-0" />
