@@ -94,7 +94,11 @@ export default async function PublicProfile(props: { params: Promise<{ username:
 
   const missingStickers = allStickers
     ?.filter(s => (inventoryMap[s.id.replace(/\s/g, '').toUpperCase()] || 0) === 0)
-    .map(s => s.id) || [];
+    .map(s => ({
+      id: s.id,
+      name: '', // No tenemos el nombre en esta vista pero el componente lo espera opcional
+      section: s.section
+    })) || [];
 
   const repeatedStickersList = Object.entries(inventoryMap)
     .filter(([_, qty]) => qty > 1)
