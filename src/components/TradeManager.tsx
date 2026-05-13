@@ -48,7 +48,10 @@ export default function TradeManager({
     const newQuants = { ...selectedQuantities };
     const current = newQuants[id] || 0;
     
-    if (current < maxQuantity) {
+    // El límite real es la cantidad total menos 1 (la del álbum)
+    const realMax = maxQuantity - 1;
+    
+    if (current < realMax) {
       newQuants[id] = current + 1;
     } else {
       delete newQuants[id];
@@ -62,7 +65,8 @@ export default function TradeManager({
     } else {
       const all: Record<string, number> = {};
       repeatedStickers.forEach(s => {
-        all[s.sticker_id] = 1; // Por defecto seleccionamos 1 de cada una
+        // Seleccionamos todas las repetidas de golpe (total - 1)
+        all[s.sticker_id] = s.quantity - 1;
       });
       setSelectedQuantities(all);
     }
@@ -266,7 +270,7 @@ export default function TradeManager({
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (qtySelected < s.quantity) {
+                                if (qtySelected < s.quantity - 1) {
                                   setSelectedQuantities({
                                     ...selectedQuantities,
                                     [s.sticker_id]: qtySelected + 1
