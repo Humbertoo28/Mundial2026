@@ -58,22 +58,23 @@ export default function PersonalStatsShare({
 
     const drawCard = (y: number, label: string, value: string | number, color?: string) => {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.beginPath(); ctx.roundRect(140, y, 800, 220, 50); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(140, y, 800, 190, 40); ctx.fill();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.lineWidth = 3; ctx.stroke();
+      ctx.lineWidth = 2; ctx.stroke();
       
-      ctx.font = 'bold 45px Arial';
+      ctx.font = 'bold 35px Arial';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.fillText(label.toUpperCase(), 540, y + 70);
+      ctx.fillText(label.toUpperCase(), 540, y + 60);
       
-      ctx.font = '900 100px Arial';
+      ctx.font = '900 85px Arial';
       ctx.fillStyle = color || 'white';
-      ctx.fillText(String(value), 540, y + 170);
+      ctx.fillText(String(value), 540, y + 145);
     };
 
-    drawCard(880, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
-    drawCard(1140, 'Repetidas', stats.repetidas, 'white');
-    drawCard(1400, 'Intercambiadas', stats.totalItemsTraded, 'white');
+    drawCard(780, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
+    drawCard(1000, 'Faltantes', stats.faltan, '#E61D25');
+    drawCard(1220, 'Repetidas', stats.repetidas, 'white');
+    drawCard(1440, 'Intercambiadas', stats.totalItemsTraded, 'white');
 
     ctx.font = 'italic 900 100px Arial';
     ctx.fillStyle = 'white';
@@ -142,20 +143,15 @@ export default function PersonalStatsShare({
 
   const handleShareWhatsApp = async () => {
     const file = await generateImageFile();
-    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
-                 `📊 Progreso: ${stats.porcentaje}%\n` +
-                 `✅ Conseguidas: ${stats.tengo}\n\n` +
-                 `¡Únete! mundial2026-indol.vercel.app`;
+    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n📊 Progreso: ${stats.porcentaje}%\n✅ Conseguidas: ${stats.tengo}\n\n¡Únete! mundial2026-indol.vercel.app`;
 
-    if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.share && file) {
       try {
         await navigator.share({
           files: [file],
           title: 'Mis Logros Panini Tracker',
-          text: text,
         });
       } catch (err) {
-        console.error("Error sharing file:", err);
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
       }
     } else {
@@ -165,20 +161,14 @@ export default function PersonalStatsShare({
 
   const handleShareInstagram = async () => {
     const file = await generateImageFile();
-    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
-                 `📊 Progreso: ${stats.porcentaje}%\n` +
-                 `✅ Conseguidas: ${stats.tengo}\n\n` +
-                 `¡Únete! mundial2026-indol.vercel.app`;
+    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n📊 Progreso: ${stats.porcentaje}%\n✅ Conseguidas: ${stats.tengo}\n\n¡Únete! mundial2026-indol.vercel.app`;
 
-    if (navigator.share && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.share && file) {
       try {
         await navigator.share({
           files: [file],
-          title: 'Mis Logros Panini Tracker',
-          text: text,
         });
       } catch (err) {
-        console.error("Error sharing file:", err);
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
