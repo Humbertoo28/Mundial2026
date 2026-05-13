@@ -36,7 +36,10 @@ export default function TradeListButton({
     
     Object.entries(bySection).forEach(([section, items]) => {
       const stickerList = items
-        .map(s => s.qty > 2 ? `${s.id} (x${s.qty - 1})` : s.id)
+        .map(s => {
+          const extras = s.qty - 1; // cuántas copias tengo de sobra
+          return extras > 1 ? `${s.id} (x${extras})` : s.id;
+        })
         .join(', ');
       lines.push(`${getFlagEmoji(section)} ${section}: ${stickerList}`);
     });
@@ -204,12 +207,12 @@ export default function TradeListButton({
           {(() => {
             const bySection: Record<string, number> = {};
             repeatedStickers.forEach(s => {
-              bySection[s.section] = (bySection[s.section] || 0) + 1;
+              bySection[s.section] = (bySection[s.section] || 0) + (s.quantity - 1);
             });
             return Object.entries(bySection).map(([section, count]) => (
               <span key={section} className="text-xs font-bold bg-[#3CAC3B]/10 text-[#3CAC3B] border border-[#3CAC3B]/20 px-3 py-1 rounded-full flex items-center gap-1">
                 <span>{getFlagEmoji(section)}</span>
-                <span>{section}: {count}</span>
+                <span>{section}: {count} extra{count !== 1 ? 's' : ''}</span>
               </span>
             ));
           })()}
