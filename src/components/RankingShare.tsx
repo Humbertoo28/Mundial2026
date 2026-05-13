@@ -139,7 +139,7 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
       // Barra de progreso
       // Barra de progreso
-      const barWidth = 350; // Reducir para dar espacio al porcentaje
+      const barWidth = 320; // Más corto para dar más espacio
       const barHeight = 25;
       const filledWidth = (user.porcentaje / 100) * barWidth;
       
@@ -153,12 +153,12 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
       ctx.fillStyle = isFirst ? '#FFD700' : '#FFFFFF';
       ctx.font = 'italic 900 65px Inter, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`${user.porcentaje}%`, 950, yOffset + 155);
+      ctx.fillText(`${user.porcentaje}%`, 1000, yOffset + 155);
       
       // Conteo debajo (pequeño)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.font = '900 30px Inter, sans-serif';
-      ctx.fillText(`${user.tengo} / ${user.total}`, 950, yOffset + 205);
+      ctx.fillText(`${user.tengo} / ${user.total}`, 1000, yOffset + 205);
 
       yOffset += rowHeight + 30;
     }
