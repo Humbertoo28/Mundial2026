@@ -2,6 +2,12 @@ import { getRankingData } from "@/app/actions/ranking";
 import { Trophy, Medal, Crown, ArrowLeft, Share2, Layers, Check, PackageOpen } from "lucide-react";
 import Link from "next/link";
 import RankingShare from "@/components/RankingShare";
+import SearchFriends from "@/components/SearchFriends";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { getProfile } from "@/app/actions/profile";
+import PersonalStatsShare from "@/components/PersonalStatsShare";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Forzar revalidación en cada carga
@@ -9,6 +15,33 @@ export const revalidate = 0; // Forzar revalidación en cada carga
 export default async function RankingPage() {
   const ranking = await getRankingData();
   const top5 = ranking.slice(0, 5);
+  const session = await getServerSession(authOptions);
+  const profile = await getProfile();
+
+  // Para PersonalStatsShare necesitamos más datos (trades)
+  // Fetch trade stats for the current user
+  let userStats = null;
+  if (session?.user?.id) {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
+    const { count: totalTrades } = await supabase
+      .from('trade_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', session.user.id);
+
+    const me = ranking.find(u => u.id === session.user.id);
+    if (me) {
+      userStats = {
+        ...me,
+        totalTrades: totalTrades || 0,
+        uniqueTradersCount: 0, // No lo calculamos aquí para no sobrecargar
+        totalItemsTraded: 0    // No lo calculamos aquí para no sobrecargar
+      };
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 animate-in fade-in duration-500">
@@ -27,7 +60,23 @@ export default async function RankingPage() {
           </p>
         </div>
         
-        <RankingShare top5={top5} />
+        <div className="flex flex-col gap-4 w-full md:w-auto">
+          <RankingShare top5={top5} />
+          
+          {userStats && (
+            <div className="animate-in slide-in-from-right-4 duration-700 delay-200">
+              <PersonalStatsShare 
+                stats={userStats as any} 
+                username={profile?.username || session?.user?.name || 'Coleccionista'} 
+                avatarUrl={profile?.avatar_url || 'https://flagcdn.com/w80/pa.png'}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-12">
+        <SearchFriends />
       </div>
 
       <div className="grid grid-cols-1 gap-4">
