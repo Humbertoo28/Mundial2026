@@ -225,7 +225,11 @@ export default async function Home() {
 
       {/* Estadísticas de Intercambio y Compartir */}
       {stats && stats.totalTrades !== undefined && (
-        <PersonalStatsShare stats={stats as any} username={displayName} />
+        <PersonalStatsShare 
+          stats={stats as any} 
+          username={displayName} 
+          avatarUrl={profile?.avatar_url || "https://flagcdn.com/w80/pa.png"} 
+        />
       )}
 
       {/* Buscador de Amigos */}

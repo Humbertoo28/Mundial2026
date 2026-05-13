@@ -13,23 +13,38 @@ type Stats = {
   totalItemsTraded: number;
 };
 
-export default function PersonalStatsShare({ stats, username }: { stats: Stats, username: string }) {
+export default function PersonalStatsShare({ 
+  stats, 
+  username, 
+  avatarUrl 
+}: { 
+  stats: Stats, 
+  username: string,
+  avatarUrl: string
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    const text = `🏆 Mis Estadísticas en Panini Tracker PTY 🏆\n\n` +
+    const text = `🏆 Mis Logros en Panini Tracker PTY 🏆\n\n` +
                  `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
-                 `✅ Conseguidas: ${stats.tengo}\n\n` +
-                 `🤝 Intercambios Realizados: ${stats.totalTrades}\n` +
-                 `👥 Personas Conocidas: ${stats.uniqueTradersCount}\n` +
-                 `📦 Figuritas Movidas: ${stats.totalItemsTraded}\n\n` +
+                 `✅ Conseguidas: ${stats.tengo}\n` +
+                 `🔁 Repetidas: ${stats.repetidas}\n` +
+                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
                  `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundialhub.vercel.app`;
     
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (navigator.share) {
+      navigator.share({
+        title: 'Mis Logros Panini Tracker',
+        text: text,
+        url: 'https://mundialhub.vercel.app'
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -47,11 +62,11 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
 
         <div className="bg-white dark:bg-[#262626] border border-[#3CAC3B]/10 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
           <div className="bg-[#3CAC3B]/10 p-3 rounded-xl text-[#3CAC3B]">
-            <Users className="h-6 w-6" />
+            <Check className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest">Conocidos</p>
-            <p className="text-xl font-black text-[#3CAC3B]">{stats.uniqueTradersCount}</p>
+            <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest">Figuritas</p>
+            <p className="text-xl font-black text-[#3CAC3B]">{stats.tengo}</p>
           </div>
         </div>
 
@@ -94,26 +109,29 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
                   {stats.porcentaje}<span className="text-3xl opacity-50">%</span>
                 </p>
 
-                <div className="w-full space-y-4 mb-12">
+                <div className="w-full space-y-4 mb-8">
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Intercambios Totales</p>
-                    <p className="text-2xl font-black text-[#3CAC3B]">{stats.totalTrades}</p>
+                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Tengo</p>
+                    <p className="text-2xl font-black text-[#3CAC3B]">{stats.tengo} <span className="text-xs text-white/40">figuritas</span></p>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Amigos</p>
-                      <p className="text-xl font-black text-white">{stats.uniqueTradersCount}</p>
+                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Repetidas</p>
+                      <p className="text-xl font-black text-white">{stats.repetidas}</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Figuritas</p>
+                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Intercambiadas</p>
                       <p className="text-xl font-black text-white">{stats.totalItemsTraded}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4">
-                   <p className="text-white font-black italic text-lg tracking-tight">@{username}</p>
+                <div className="mt-4 flex flex-col items-center gap-3">
+                   <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                     <img src={avatarUrl} alt={username} className="w-8 h-8 rounded-full border-2 border-white/50" />
+                     <p className="text-white font-black italic text-lg tracking-tight">@{username}</p>
+                   </div>
                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">mundialhub.vercel.app</p>
                 </div>
               </div>
@@ -126,17 +144,17 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 bg-[#2A398D] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#1e2a6d] transition-all"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-                  {copied ? 'Copiado' : 'Instagram'}
+                  <Share2 className="h-4 w-4" />
+                  Instagram
                 </button>
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 bg-[#3CAC3B] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#2d8a2c] transition-all"
+                  className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-md active:scale-95 transition-all"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-                  {copied ? 'Copiado' : 'WhatsApp'}
+                  <MessageSquare className="h-4 w-4" />
+                  WhatsApp
                 </button>
               </div>
               
@@ -144,8 +162,8 @@ export default function PersonalStatsShare({ stats, username }: { stats: Stats, 
                 onClick={handleCopy}
                 className="flex items-center justify-center gap-2 text-[#474A4A]/60 font-bold text-xs hover:text-[#2A398D] py-2 transition-colors"
               >
-                <Copy className="h-3 w-3" />
-                Copiar texto con mis estadísticas
+                {copied ? <Check className="h-3 w-3 text-[#3CAC3B]" /> : <Copy className="h-3 w-3" />}
+                {copied ? '¡Copiado al portapapeles!' : 'Copiar estadísticas como texto'}
               </button>
             </div>
 
