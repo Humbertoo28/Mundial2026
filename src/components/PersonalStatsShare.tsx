@@ -306,8 +306,6 @@ export default function PersonalStatsShare({
                 Descargar Tarjeta (Imagen)
               </button>
 
-              <p className="text-[10px] font-black text-[#474A4A]/40 uppercase tracking-widest text-center mb-1">Compartir texto directo</p>
-              
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={handleShareInstagram}
