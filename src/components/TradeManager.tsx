@@ -23,12 +23,16 @@ export default function TradeManager({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'give' | 'receive'>('give');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [receivedIds, setReceivedIds] = useState<string[]>([]);
   const [receivedInput, setReceivedInput] = useState('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const totalSelectedCount = useMemo(() => 
+    Object.values(selectedQuantities).reduce((a, b) => a + b, 0),
+  [selectedQuantities]);
 
   const stickerMap = useMemo(() => {
     const map: Record<string, { name: string, section: string }> = {};
@@ -38,21 +42,27 @@ export default function TradeManager({
     return map;
   }, [allStickers]);
 
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+  const toggleSelect = (id: string, maxQuantity: number) => {
+    const newQuants = { ...selectedQuantities };
+    const current = newQuants[id] || 0;
+    
+    if (current < maxQuantity) {
+      newQuants[id] = current + 1;
     } else {
-      newSelected.add(id);
+      delete newQuants[id];
     }
-    setSelectedIds(newSelected);
+    setSelectedQuantities(newQuants);
   };
 
   const selectAll = () => {
-    if (selectedIds.size === repeatedStickers.length) {
-      setSelectedIds(new Set());
+    if (Object.keys(selectedQuantities).length === repeatedStickers.length) {
+      setSelectedQuantities({});
     } else {
-      setSelectedIds(new Set(repeatedStickers.map(s => s.sticker_id)));
+      const all: Record<string, number> = {};
+      repeatedStickers.forEach(s => {
+        all[s.sticker_id] = 1; // Por defecto seleccionamos 1 de cada una
+      });
+      setSelectedQuantities(all);
     }
   };
 
@@ -96,17 +106,24 @@ export default function TradeManager({
   };
 
   const handleExecuteTrade = async () => {
-    if (selectedIds.size === 0 && receivedIds.length === 0) return;
+    if (totalSelectedCount === 0 && receivedIds.length === 0) return;
 
     setError(null);
     setSuccess(false);
 
     startTransition(async () => {
       try {
-        const result = await executeTrade(Array.from(selectedIds), receivedIds);
+        const givenArray: string[] = [];
+        Object.entries(selectedQuantities).forEach(([id, qty]) => {
+          for (let i = 0; i < qty; i++) {
+            givenArray.push(id);
+          }
+        });
+
+        const result = await executeTrade(givenArray, receivedIds);
         if (result.success) {
           setSuccess(true);
-          setSelectedIds(new Set());
+          setSelectedQuantities({});
           setReceivedIds([]);
           setTimeout(() => {
             setSuccess(false);
@@ -163,7 +180,7 @@ export default function TradeManager({
               activeTab === 'give' ? 'text-[#E61D25] border-b-2 border-[#E61D25] bg-[#E61D25]/5' : 'text-[#474A4A]/40'
             }`}
           >
-            Doy ({selectedIds.size})
+            Doy ({totalSelectedCount})
           </button>
           <button 
             onClick={() => setActiveTab('receive')}
@@ -190,7 +207,7 @@ export default function TradeManager({
                   onClick={selectAll}
                   className="text-[10px] font-black uppercase text-[#2A398D]/60 hover:text-[#2A398D] underline transition-colors"
                 >
-                  {selectedIds.size === repeatedStickers.length ? 'Ninguna' : 'Todas'}
+                  {Object.keys(selectedQuantities).length === repeatedStickers.length ? 'Ninguna' : 'Todas'}
                 </button>
               </div>
 
@@ -200,12 +217,13 @@ export default function TradeManager({
                     No tienes figuritas repetidas registradas
                   </div>
                 ) : repeatedStickers.map(s => {
-                  const isSelected = selectedIds.has(s.sticker_id);
+                  const qtySelected = selectedQuantities[s.sticker_id] || 0;
+                  const isSelected = qtySelected > 0;
                   return (
                     <button
                       key={s.sticker_id}
-                      onClick={() => toggleSelect(s.sticker_id)}
-                      className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-start gap-1 text-left group ${
+                      onClick={() => toggleSelect(s.sticker_id, s.quantity)}
+                      className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-start gap-1 text-left group active:scale-95 ${
                         isSelected 
                           ? 'border-[#E61D25] bg-[#E61D25]/5 shadow-sm' 
                           : 'border-[#474A4A]/10 hover:border-[#2A398D]/20 hover:bg-gray-50'
@@ -218,9 +236,16 @@ export default function TradeManager({
                         <span className="text-[10px] font-black text-[#2A398D]">{s.sticker_id}</span>
                       </div>
                       <span className="text-xs font-black text-[#474A4A] dark:text-white/90 line-clamp-1">{s.name}</span>
-                      <span className="text-[9px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full mt-1">
-                        Tienes x{s.quantity}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full">
+                          Tienes x{s.quantity}
+                        </span>
+                        {qtySelected > 1 && (
+                          <span className="text-[9px] font-black text-white bg-[#E61D25] px-2 py-0.5 rounded-full animate-pulse">
+                            Das x{qtySelected}
+                          </span>
+                        )}
+                      </div>
                       {isSelected && (
                         <div className="absolute -top-1 -right-1 bg-[#E61D25] text-white rounded-full p-1 shadow-sm ring-2 ring-white">
                           <Check className="h-2 w-2" />
@@ -364,7 +389,7 @@ export default function TradeManager({
             <div className="flex items-center gap-10 w-full sm:w-auto justify-around sm:justify-start">
               <div className="flex flex-col items-center sm:items-start">
                 <span className="text-[10px] font-black text-[#474A4A]/30 uppercase tracking-widest">Doy</span>
-                <span className="text-2xl font-black text-[#E61D25] tabular-nums">{selectedIds.size}</span>
+                <span className="text-2xl font-black text-[#E61D25] tabular-nums">{totalSelectedCount}</span>
               </div>
               <ArrowRight className="h-6 w-6 text-[#474A4A]/10" />
               <div className="flex flex-col items-center sm:items-start">
