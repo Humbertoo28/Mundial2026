@@ -247,7 +247,7 @@ export default async function Home() {
           <span className="text-3xl md:text-5xl font-black text-[#474A4A] dark:text-white relative z-10">{stats.faltan}</span>
           <span className="text-xs md:text-sm text-[#474A4A]/80 dark:text-white/60 font-bold uppercase tracking-wider mt-2 relative z-10 text-center flex flex-col items-center gap-2">
             Faltantes
-            <MissingStickersPdfButton missingStickers={missingStickers} />
+            <MissingStickersPdfButton missingStickers={missingStickers} username={displayName} />
           </span>
         </div>
 
@@ -398,7 +398,8 @@ export default async function Home() {
         <TradeListButton 
           repeatedStickers={repeatedStickers} 
           allStickers={allStickers || []} 
-          allProfiles={allProfiles?.map(p => p.username) || []}
+          allProfiles={allProfiles?.map(p => p.username!) || []}
+          username={displayName}
         />
       </div>
       

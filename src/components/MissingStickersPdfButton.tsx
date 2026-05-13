@@ -10,9 +10,11 @@ type MissingSticker = {
 };
 
 export default function MissingStickersPdfButton({ 
-  missingStickers 
+  missingStickers,
+  username
 }: { 
-  missingStickers: MissingSticker[] 
+  missingStickers: MissingSticker[],
+  username: string
 }) {
   const handleDownloadPdf = async () => {
     if (missingStickers.length === 0) return;
@@ -27,14 +29,14 @@ export default function MissingStickersPdfButton({
       bySection[s.section].push(s.id);
     });
 
-    const lines: string[] = ['⚽ MIS FALTANTES - MUNDIAL 2026 ⚽', ''];
+    const lines: string[] = [`MIS FIGURITAS FALTANTES - @${username.toUpperCase()}`, 'MUNDIAL 2026', ''];
     
     Object.entries(bySection).forEach(([section, ids]) => {
       lines.push(`${section}: ${ids.join(', ')}`);
     });
 
     lines.push('');
-    lines.push('Generado por Panini Tracker PTY 🇵🇦');
+    lines.push('Generado por Panini Tracker PTY - mundialhub.vercel.app');
 
     let y = 15;
     doc.setFontSize(14);

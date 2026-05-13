@@ -15,11 +15,13 @@ type RepeatedSticker = {
 export default function TradeListButton({ 
   repeatedStickers,
   allStickers,
-  allProfiles = []
+  allProfiles = [],
+  username = ''
 }: { 
   repeatedStickers: RepeatedSticker[];
   allStickers: { id: string, name: string, section: string }[];
   allProfiles?: string[];
+  username?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -199,15 +201,32 @@ export default function TradeListButton({
               if (!tradeText) return;
               const { jsPDF } = await import('jspdf');
               const doc = new jsPDF();
-              const lines = tradeText.split('\n');
-              let y = 10;
+              
+              // Clean emojis for PDF (jsPDF doesn't support them well)
+              const cleanText = tradeText
+                .replace(/⚽/g, '')
+                .replace(/🤝/g, '')
+                .replace(/🇵🇦/g, '')
+                .replace(/[^\x00-\x7F]/g, ''); // Generic emoji removal
+
+              const header = `MIS FIGURITAS REPETIDAS - @${username.toUpperCase()}`;
+              doc.setFontSize(14);
+              doc.text(header, 10, 15);
+              doc.setFontSize(10);
+              
+              const lines = cleanText.split('\n');
+              let y = 25;
               lines.forEach(line => {
-                doc.text(line, 10, y);
-                y += 7;
-                if (y > 280) {
-                  doc.addPage();
-                  y = 10;
-                }
+                if (!line.trim()) { y += 5; return; }
+                const splitLines = doc.splitTextToSize(line, 180);
+                splitLines.forEach((sl: string) => {
+                  doc.text(sl, 10, y);
+                  y += 7;
+                  if (y > 280) {
+                    doc.addPage();
+                    y = 10;
+                  }
+                });
               });
               doc.save('lista_intercambio.pdf');
             }}
