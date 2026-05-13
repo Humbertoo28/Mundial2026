@@ -15,6 +15,7 @@ export type RankingUser = {
   repetidas: number;
   faltantes: number;
   porcentaje: number;
+  total: number;
 };
 
 export async function getRankingData(): Promise<RankingUser[]> {
@@ -62,7 +63,8 @@ export async function getRankingData(): Promise<RankingUser[]> {
       tengo: stats.tengo,
       repetidas: stats.repetidas,
       faltantes: totalStickers - stats.tengo,
-      porcentaje: Math.round((stats.tengo / totalStickers) * 100)
+      porcentaje: parseFloat(((stats.tengo / totalStickers) * 100).toFixed(1)),
+      total: totalStickers
     };
   });
 

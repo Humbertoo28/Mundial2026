@@ -8,6 +8,7 @@ type RankingUser = {
   avatar_url: string | null;
   tengo: number;
   porcentaje: number;
+  total: number;
 };
 
 export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
@@ -49,13 +50,13 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
     // 3. Título
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'black italic 80px Inter, system-ui';
+    ctx.font = 'black italic 110px Inter, system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('TOP 5 COLECCIONISTAS', canvas.width / 2, 250);
+    ctx.fillText('TOP 5 COLECCIONISTAS', canvas.width / 2, 280);
     
     ctx.fillStyle = '#3CAC3B';
-    ctx.font = '900 40px Inter';
-    ctx.fillText('PANINI WORLD CUP 2026 TRACKER', canvas.width / 2, 320);
+    ctx.font = '900 45px Inter';
+    ctx.fillText('PANINI WORLD CUP 2026 TRACKER', canvas.width / 2, 360);
 
     // 4. Dibujar el Ranking (Top 5)
     let yOffset = 450;
@@ -147,10 +148,16 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
       ctx.fillStyle = isFirst ? '#FFD700' : '#3CAC3B';
       roundRect(ctx, 450, yOffset + 130, filledWidth, barHeight, 12, true, false);
 
-      // Porcentaje
+      // Porcentaje (Texto más grande para que se vea)
       ctx.fillStyle = isFirst ? '#FFD700' : '#FFFFFF';
-      ctx.font = '900 40px Inter';
-      ctx.fillText(`${user.porcentaje}%`, 870, yOffset + 155);
+      ctx.font = '900 50px Inter';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${user.porcentaje}%`, 930, yOffset + 140);
+      
+      // Conteo debajo (pequeño)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '700 25px Inter';
+      ctx.fillText(`${user.tengo} / ${user.total}`, 930, yOffset + 180);
 
       yOffset += rowHeight + 30;
     }
