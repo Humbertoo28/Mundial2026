@@ -50,7 +50,7 @@ export default async function Home() {
   // Fetch all stickers to calculate section stats
   const { data: allStickers } = await supabase
     .from('stickers')
-    .select('id, section');
+    .select('id, name, section');
 
   // Fetch user inventory
   const { data: userStickers } = await supabase
@@ -129,6 +129,7 @@ export default async function Home() {
     .filter(s => s.quantity > 1)
     .map(s => ({
       sticker_id: s.sticker_id,
+      name: allStickers?.find(as => as.id === s.sticker_id)?.name || '',
       quantity: s.quantity,
       section: stickerSectionMap[s.sticker_id] || 'Otros',
     }))
@@ -335,7 +336,10 @@ export default async function Home() {
           </div>
           <h2 className="text-2xl font-bold text-[#2A398D]">Intercambio</h2>
         </div>
-        <TradeListButton repeatedStickers={repeatedStickers} />
+        <TradeListButton 
+          repeatedStickers={repeatedStickers} 
+          allStickers={allStickers || []} 
+        />
       </div>
       
       {/* Banner de Acción Rápida */}

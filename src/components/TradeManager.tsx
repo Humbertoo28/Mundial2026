@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Plus, ArrowRight } from 'lucide-react';
+import { useState, useTransition, useMemo } from 'react';
+import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Plus, ArrowRight, User } from 'lucide-react';
 import { executeTrade } from '@/app/actions/stickers';
 import { getSectionDisplayName, getFlagEmoji } from '@/lib/flags';
 
 type RepeatedSticker = {
   sticker_id: string;
+  name: string;
   quantity: number;
   section: string;
 };
 
 export default function TradeManager({ 
   repeatedStickers,
+  allStickers,
   onUpdate 
 }: { 
   repeatedStickers: RepeatedSticker[];
+  allStickers: { id: string, name: string, section: string }[];
   onUpdate?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +28,16 @@ export default function TradeManager({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const stickerMap = useMemo(() => {
+    const map: Record<string, { name: string, section: string }> = {};
+    allStickers.forEach(s => {
+      map[s.id] = { name: s.name, section: s.section };
+    });
+    return map;
+  }, [allStickers]);
+
+  const currentLookupName = receivedInput.length >= 3 ? stickerMap[receivedInput]?.name : null;
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -48,6 +61,12 @@ export default function TradeManager({
     e?.preventDefault();
     const id = receivedInput.trim().toUpperCase();
     if (!id) return;
+    
+    if (!stickerMap[id]) {
+      setError("El código no existe en el catálogo");
+      return;
+    }
+
     if (receivedIds.includes(id)) {
       setError("Ya agregaste esta figurita");
       return;
@@ -97,7 +116,7 @@ export default function TradeManager({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#1A1A1A] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10">
+      <div className="bg-white dark:bg-[#1A1A1A] w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/10">
         {/* Header */}
         <div className="p-6 border-b border-[#474A4A]/10 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-[#2A398D] to-[#1e2a6d] text-white">
           <div className="flex items-center gap-3">
@@ -134,28 +153,31 @@ export default function TradeManager({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
               {repeatedStickers.map(s => {
                 const isSelected = selectedIds.has(s.sticker_id);
                 return (
                   <button
                     key={s.sticker_id}
                     onClick={() => toggleSelect(s.sticker_id)}
-                    className={`relative p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center ${
+                    className={`relative p-3 rounded-xl border-2 transition-all flex flex-col items-start gap-1 text-left ${
                       isSelected 
                         ? 'border-[#E61D25] bg-[#E61D25]/5' 
                         : 'border-[#474A4A]/10 hover:border-[#E61D25]/30'
                     }`}
                   >
-                    <span className="text-[9px] font-bold text-[#474A4A]/40 uppercase truncate w-full">
-                      {getSectionDisplayName(s.section)}
-                    </span>
-                    <span className="text-sm font-black text-[#2A398D]">{s.sticker_id}</span>
-                    <span className="text-[8px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-1.5 py-0.5 rounded-full">
-                      x{s.quantity}
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[9px] font-bold text-[#474A4A]/40 uppercase truncate">
+                        {getSectionDisplayName(s.section)}
+                      </span>
+                      <span className="text-[10px] font-black text-[#2A398D]">{s.sticker_id}</span>
+                    </div>
+                    <span className="text-xs font-black text-[#474A4A] dark:text-white/90 line-clamp-1">{s.name}</span>
+                    <span className="text-[9px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full mt-1">
+                      Tienes x{s.quantity}
                     </span>
                     {isSelected && (
-                      <div className="absolute top-1 right-1 bg-[#E61D25] text-white rounded-full p-0.5">
+                      <div className="absolute -top-1 -right-1 bg-[#E61D25] text-white rounded-full p-1 shadow-sm">
                         <Check className="h-2 w-2" />
                       </div>
                     )}
@@ -172,40 +194,67 @@ export default function TradeManager({
               Lo que recibo
             </h3>
 
-            <form onSubmit={addReceived} className="flex gap-2 mb-4">
-              <input 
-                type="text"
-                placeholder="Código (Ej: ARG01)"
-                value={receivedInput}
-                onChange={(e) => setReceivedInput(e.target.value.toUpperCase())}
-                className="flex-1 bg-[#D1D4D1]/20 border border-[#474A4A]/20 rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:border-[#3CAC3B] transition-colors"
-              />
-              <button 
-                type="submit"
-                className="bg-[#3CAC3B] text-white p-2 rounded-xl hover:scale-105 transition-transform shadow-md"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </form>
+            <div className="relative">
+              <form onSubmit={addReceived} className="flex gap-2 mb-2">
+                <input 
+                  type="text"
+                  placeholder="Código (Ej: ARG01)"
+                  value={receivedInput}
+                  onChange={(e) => {
+                    setReceivedInput(e.target.value.toUpperCase());
+                    setError(null);
+                  }}
+                  className="flex-1 bg-[#D1D4D1]/20 border border-[#474A4A]/20 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#3CAC3B] transition-colors"
+                />
+                <button 
+                  type="submit"
+                  disabled={!currentLookupName}
+                  className="bg-[#3CAC3B] text-white px-4 rounded-xl hover:scale-105 transition-all shadow-md disabled:opacity-50 disabled:grayscale"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </form>
+              
+              {/* Preview del nombre mientras escribe */}
+              <div className="min-h-[24px] mb-4">
+                {currentLookupName ? (
+                  <div className="flex items-center gap-2 text-[10px] font-black text-[#3CAC3B] animate-in slide-in-from-left-2">
+                    <User className="h-3 w-3" />
+                    <span>{currentLookupName}</span>
+                    <span className="text-[#474A4A]/40 uppercase">({stickerMap[receivedInput]?.section})</span>
+                  </div>
+                ) : receivedInput.length >= 3 && (
+                  <div className="text-[10px] font-bold text-[#E61D25]/60 italic animate-in fade-in">
+                    Código no encontrado...
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <div className="flex-1 bg-[#D1D4D1]/10 rounded-2xl p-4 border-2 border-dashed border-[#474A4A]/10 min-h-[150px]">
+            <div className="flex-1 bg-[#D1D4D1]/10 rounded-2xl p-4 border-2 border-dashed border-[#474A4A]/10 min-h-[200px]">
               {receivedIds.length === 0 ? (
-                <p className="text-center text-[#474A4A]/40 text-xs mt-10 font-bold uppercase tracking-widest">
-                  Ingresa los códigos de las figuritas que recibiste
-                </p>
+                <div className="flex flex-col items-center justify-center h-full opacity-30 text-center px-8">
+                  <User className="h-12 w-12 mb-2" />
+                  <p className="text-xs font-bold uppercase tracking-widest leading-tight">
+                    Escribe el código y presiona Enter para añadir el jugador
+                  </p>
+                </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {receivedIds.map(id => (
                     <div 
                       key={id}
-                      className="bg-white border-2 border-[#3CAC3B] text-[#3CAC3B] px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-sm animate-in zoom-in duration-200"
+                      className="bg-white border-2 border-[#3CAC3B] p-2 rounded-xl flex items-center justify-between gap-2 shadow-sm animate-in zoom-in duration-200"
                     >
-                      {id}
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-[8px] font-black text-[#3CAC3B] uppercase">{id}</span>
+                        <span className="text-[10px] font-bold text-[#474A4A] truncate">{stickerMap[id]?.name}</span>
+                      </div>
                       <button 
                         onClick={() => removeReceived(id)}
-                        className="hover:text-[#E61D25] transition-colors"
+                        className="p-1 hover:bg-red-50 text-[#474A4A]/30 hover:text-[#E61D25] rounded-lg transition-colors"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
@@ -214,7 +263,7 @@ export default function TradeManager({
             </div>
 
             {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-bold animate-in slide-in-from-top-1">
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-bold animate-in shake duration-300">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 {error}
               </div>
@@ -234,19 +283,19 @@ export default function TradeManager({
           <div className="flex items-center gap-8">
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-[#474A4A]/40 uppercase">Entrego</span>
-              <span className="text-xl font-black text-[#E61D25]">{selectedIds.size}</span>
+              <span className="text-2xl font-black text-[#E61D25]">{selectedIds.size}</span>
             </div>
             <ArrowRight className="h-6 w-6 text-[#474A4A]/20" />
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-[#474A4A]/40 uppercase">Recibo</span>
-              <span className="text-xl font-black text-[#3CAC3B]">{receivedIds.length}</span>
+              <span className="text-2xl font-black text-[#3CAC3B]">{receivedIds.length}</span>
             </div>
           </div>
           
           <button
             onClick={handleExecuteTrade}
             disabled={(selectedIds.size === 0 && receivedIds.length === 0) || isPending}
-            className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm bg-[#2A398D] text-white hover:bg-[#3CAC3B] disabled:opacity-50 disabled:grayscale transition-all shadow-xl active:scale-95"
+            className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm bg-[#2A398D] text-white hover:bg-[#3CAC3B] disabled:opacity-50 disabled:grayscale transition-all shadow-xl active:scale-95"
           >
             {isPending ? (
               <RefreshCw className="h-5 w-5 animate-spin" />

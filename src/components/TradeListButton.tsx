@@ -7,11 +7,18 @@ import TradeManager from './TradeManager';
 
 type RepeatedSticker = {
   sticker_id: string;
+  name: string;
   quantity: number;
   section: string;
 };
 
-export default function TradeListButton({ repeatedStickers }: { repeatedStickers: RepeatedSticker[] }) {
+export default function TradeListButton({ 
+  repeatedStickers,
+  allStickers
+}: { 
+  repeatedStickers: RepeatedSticker[];
+  allStickers: { id: string, name: string, section: string }[];
+}) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -137,7 +144,10 @@ export default function TradeListButton({ repeatedStickers }: { repeatedStickers
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <TradeManager repeatedStickers={repeatedStickers} />
+          <TradeManager 
+            repeatedStickers={repeatedStickers} 
+            allStickers={allStickers} 
+          />
           
           <button
             onClick={() => setShowPreview(!showPreview)}
