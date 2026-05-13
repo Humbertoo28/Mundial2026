@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, Filter, Minus, Plus, Layers } from 'lucide-react';
 import { updateStickerQuantity } from '@/app/actions/stickers';
 import { getFlagUrl, getFlagEmoji, sortSectionsWithPanamaFirst, PREFIX_TO_FLAG } from '@/lib/flags';
@@ -25,6 +26,7 @@ export default function AlbumGrid({
   initialStickers: Sticker[];
   initialUserStickers: UserSticker[];
 }) {
+  const router = useRouter();
   const getSectionDisplayName = (section: string) => {
     const normalized = section.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (normalized === 'SECCION 1') return '🏟️ Estadios y Sedes';
@@ -80,6 +82,7 @@ export default function AlbumGrid({
       timeoutRefs.current[stickerId] = setTimeout(async () => {
         try {
           await updateStickerQuantity(stickerId, newQ);
+          router.refresh();
         } catch (error) {
           console.error('Error updating sticker:', error);
         }

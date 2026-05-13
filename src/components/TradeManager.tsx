@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Plus, ArrowRight, User, Search, Trash2 } from 'lucide-react';
 import { executeTrade } from '@/app/actions/stickers';
 import { getSectionDisplayName, getFlagEmoji } from '@/lib/flags';
@@ -21,6 +22,7 @@ export default function TradeManager({
   allStickers: { id: string, name: string, section: string }[];
   onUpdate?: () => void;
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'give' | 'receive'>('give');
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
@@ -125,6 +127,7 @@ export default function TradeManager({
           setSuccess(true);
           setSelectedQuantities({});
           setReceivedIds([]);
+          router.refresh();
           setTimeout(() => {
             setSuccess(false);
             setIsOpen(false);
