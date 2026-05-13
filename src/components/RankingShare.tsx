@@ -50,7 +50,7 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
     // 3. Título
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'italic 900 140px Inter, sans-serif';
+    ctx.font = 'italic 900 120px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('TOP 5 COLECCIONISTAS', canvas.width / 2, 280);
     
