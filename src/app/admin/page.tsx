@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { redirect } from "next/navigation";
 import { createClient } from '@supabase/supabase-js';
-import { Users, Database, Star, Trophy, ArrowLeft } from "lucide-react";
+import { Users, Database, Star, Trophy, ArrowLeft, RefreshCw, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import ExportDataButton from "@/components/admin/ExportDataButton";
 
@@ -27,6 +27,7 @@ export default async function AdminDashboard() {
   let profilesError: any = null;
   let allUserStickers: any[] | null = null;
   let stickersError: any = null;
+  let tradeLogs: any[] | null = null;
 
   try {
     // Si faltan las variables, no intentar conectarse para no crashear (luego mostramos el error rojo)
@@ -53,10 +54,14 @@ export default async function AdminDashboard() {
         
       allUserStickers = stickersResult.data;
       stickersError = stickersResult.error;
-        
-      if (stickersError) {
-        console.error("Admin Dashboard: Error fetching stickers", stickersError);
-      }
+
+      // Fetch all trade logs
+      const tradeLogsResult = await supabase
+        .from('trade_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      tradeLogs = tradeLogsResult.data;
     }
   } catch (err: any) {
     console.error("Admin Dashboard: Critical Error", err);
@@ -134,9 +139,12 @@ export default async function AdminDashboard() {
   }).sort((a, b) => b.uniqueStickers - a.uniqueStickers);
 
   const totalStickersPlatform = allUserStickers?.reduce((acc, us) => acc + us.quantity, 0) || 0;
+  const totalTrades = tradeLogs?.length || 0;
+  const totalMovedItems = tradeLogs?.reduce((acc: any, log: any) => acc + (log.given_ids?.length || 0) + (log.received_ids?.length || 0), 0) || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* ... existing header ... */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="bg-[#E61D25] p-3 rounded-2xl shadow-lg">
@@ -147,7 +155,7 @@ export default async function AdminDashboard() {
               Panel del Creador
             </h1>
             <p className="text-[#474A4A]/60 dark:text-white/60 font-bold uppercase tracking-widest text-xs">
-              Estadísticas globales de Panini Tracker PTY
+              Métricas en Tiempo Real
             </p>
           </div>
         </div>
@@ -161,87 +169,114 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Tarjetas de Resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white dark:bg-[#262626] p-8 rounded-3xl border border-[#2A398D]/10 dark:border-white/5 shadow-xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-          <Users className="h-10 w-10 text-[#2A398D] mb-4 relative z-10" />
-          <p className="text-4xl font-black text-[#2A398D] dark:text-white relative z-10">{totalUsers}</p>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Usuarios Registrados</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <Users className="h-8 w-8 text-[#2A398D] mb-2 relative z-10" />
+          <p className="text-3xl font-black text-[#2A398D] dark:text-white relative z-10">{totalUsers}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Usuarios</p>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] p-8 rounded-3xl border border-[#3CAC3B]/10 dark:border-white/5 shadow-xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#3CAC3B]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-          <Star className="h-10 w-10 text-[#3CAC3B] mb-4 relative z-10" />
-          <p className="text-4xl font-black text-[#3CAC3B] relative z-10">{totalStickersPlatform}</p>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Figuritas en Circulación</p>
+        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#3CAC3B]/10 shadow-xl relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#3CAC3B]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <Star className="h-8 w-8 text-[#3CAC3B] mb-2 relative z-10" />
+          <p className="text-3xl font-black text-[#3CAC3B] relative z-10">{totalStickersPlatform}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Figuritas Circulando</p>
         </div>
 
-        <div className="bg-white dark:bg-[#262626] p-8 rounded-3xl border border-[#E61D25]/10 dark:border-white/5 shadow-xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#E61D25]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-          <Trophy className="h-10 w-10 text-[#E61D25] mb-4 relative z-10" />
-          <p className="text-4xl font-black text-[#E61D25] relative z-10">
-            {userStats?.[0]?.percentage || 0}%
-          </p>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Máximo Progreso Alcanzado</p>
+        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#E61D25]/10 shadow-xl relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#E61D25]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <RefreshCw className="h-8 w-8 text-[#E61D25] mb-2 relative z-10" />
+          <p className="text-3xl font-black text-[#E61D25] relative z-10">{totalTrades}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Intercambios</p>
+        </div>
+
+        <div className="bg-white dark:bg-[#262626] p-6 rounded-3xl border border-[#2A398D]/10 shadow-xl relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#2A398D]/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <Trophy className="h-8 w-8 text-[#2A398D] mb-2 relative z-10" />
+          <p className="text-3xl font-black text-[#2A398D] dark:text-white relative z-10">{totalMovedItems}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/40 mt-1 relative z-10">Figuritas Movidas</p>
         </div>
       </div>
 
-      {/* Lista de Usuarios */}
-      <div className="bg-white dark:bg-[#262626] rounded-3xl border border-[#2A398D]/10 dark:border-white/5 shadow-2xl">
-        <div className="p-6 border-b border-[#2A398D]/10 dark:border-white/5 bg-[#2A398D]/5 flex items-center justify-between">
-          <h2 className="text-xl font-black text-[#2A398D] dark:text-white uppercase italic">Ranking de Coleccionistas</h2>
-          <ExportDataButton data={userStats as any} />
-        </div>
-        <div className="overflow-x-auto rounded-b-3xl">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-[#D1D4D1]/20 dark:bg-white/5 text-[#474A4A]/60 dark:text-white/40 text-[10px] uppercase tracking-widest font-black">
-                <th className="px-6 py-4">Usuario</th>
-                <th className="px-6 py-4">Únicas</th>
-                <th className="px-6 py-4">Repetidas</th>
-                <th className="px-6 py-4">Progreso</th>
-                <th className="px-6 py-4 text-right">Email</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#2A398D]/5 dark:divide-white/5">
-              {userStats?.map((user) => (
-                <tr key={user.id} className="hover:bg-[#2A398D]/5 dark:hover:bg-white/5 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={user.avatar_url || 'https://via.placeholder.com/32'} 
-                        className="w-8 h-8 rounded-full border border-[#2A398D]/20 shadow-sm"
-                        alt=""
-                      />
-                      <span className="font-bold text-[#474A4A] dark:text-white">
-                        {user.username || 'Sin nombre'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-black text-[#2A398D] dark:text-[#4C5DBB]">{user.uniqueStickers}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-[#E61D25]">{user.repeatedStickers}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-[#D1D4D1] dark:bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-[#3CAC3B]" 
-                          style={{ width: `${user.percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] font-black text-[#3CAC3B]">{user.percentage}%</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right text-xs text-[#474A4A]/40 dark:text-white/20 font-medium">
-                    {user.email}
-                  </td>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Lista de Usuarios */}
+        <div className="lg:col-span-2 bg-white dark:bg-[#262626] rounded-3xl border border-[#2A398D]/10 dark:border-white/5 shadow-2xl overflow-hidden">
+          <div className="p-6 border-b border-[#2A398D]/10 dark:border-white/5 bg-[#2A398D]/5 flex items-center justify-between">
+            <h2 className="text-xl font-black text-[#2A398D] dark:text-white uppercase italic">Ranking</h2>
+            <ExportDataButton data={userStats as any} />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-[#D1D4D1]/20 dark:bg-white/5 text-[#474A4A]/60 dark:text-white/40 text-[10px] uppercase tracking-widest font-black">
+                  <th className="px-6 py-4">Usuario</th>
+                  <th className="px-6 py-4">Únicas</th>
+                  <th className="px-6 py-4">Progreso</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#2A398D]/5 dark:divide-white/5">
+                {userStats?.map((user) => (
+                  <tr key={user.id} className="hover:bg-[#2A398D]/5 dark:hover:bg-white/5 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={user.avatar_url || 'https://via.placeholder.com/32'} 
+                          className="w-8 h-8 rounded-full border border-[#2A398D]/20"
+                          alt=""
+                        />
+                        <div>
+                          <p className="font-bold text-[#474A4A] dark:text-white text-sm leading-none">{user.username || 'Sin nombre'}</p>
+                          <p className="text-[9px] text-[#474A4A]/40 mt-1 uppercase">{user.email?.split('@')[0]}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-black text-[#2A398D] dark:text-[#4C5DBB]">{user.uniqueStickers}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-1.5 bg-[#D1D4D1] dark:bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#3CAC3B]" style={{ width: `${user.percentage}%` }} />
+                        </div>
+                        <span className="text-[9px] font-black text-[#3CAC3B]">{user.percentage}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Actividad Reciente */}
+        <div className="bg-white dark:bg-[#262626] rounded-3xl border border-[#E61D25]/10 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-[#E61D25]/10 dark:border-white/5 bg-[#E61D25]/5">
+            <h2 className="text-xl font-black text-[#E61D25] uppercase italic">Actividad</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto max-h-[600px] p-4 space-y-3">
+            {tradeLogs?.map((log: any) => {
+              const user = profiles?.find(p => p.id === log.user_id);
+              return (
+                <div key={log.id} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-[#3CAC3B]/30 transition-all">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-black text-[10px] text-[#2A398D]">@{user?.username || 'user'}</span>
+                    <ArrowRight className="h-3 w-3 text-gray-400" />
+                    <span className="font-black text-[10px] text-[#3CAC3B]">{log.trader_name || 'Alguien'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      <span className="text-[9px] font-bold bg-[#E61D25]/10 text-[#E61D25] px-2 py-0.5 rounded-full">-{log.given_ids?.length || 0}</span>
+                      <span className="text-[9px] font-bold bg-[#3CAC3B]/10 text-[#3CAC3B] px-2 py-0.5 rounded-full">+{log.received_ids?.length || 0}</span>
+                    </div>
+                    <span className="text-[8px] text-gray-400 font-medium">
+                      {new Date(log.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
