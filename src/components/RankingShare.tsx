@@ -48,9 +48,9 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
     ctx.fill();
     ctx.globalAlpha = 1.0;
 
-    // 3. Título (Ajustado para que no se corte)
+    // 3. Título (Reducido más para mejor balance)
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'italic 900 95px Inter, sans-serif';
+    ctx.font = 'italic 900 80px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('TOP 5 COLECCIONISTAS', canvas.width / 2, 280);
     
@@ -131,9 +131,9 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
         ctx.fill();
       }
 
-      // Nombre de usuario (Más pequeño para evitar choque)
+      // Nombre de usuario (Más pequeño)
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 italic 45px Inter, sans-serif';
+      ctx.font = '900 italic 40px Inter, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(`@${user.username.toUpperCase()}`, 450, yOffset + 100);
 
@@ -151,7 +151,7 @@ export default function RankingShare({ top5 }: { top5: RankingUser[] }) {
 
       // Porcentaje (Texto más grande para que se vea)
       ctx.fillStyle = isFirst ? '#FFD700' : '#FFFFFF';
-      ctx.font = 'italic 900 65px Inter, sans-serif';
+      ctx.font = 'italic 900 55px Inter, sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(`${user.porcentaje}%`, 1000, yOffset + 155);
       
