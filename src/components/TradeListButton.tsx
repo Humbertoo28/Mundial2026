@@ -38,7 +38,7 @@ export default function TradeListButton({
       const stickerList = items
         .map(s => {
           const extras = s.qty - 1; // cuántas copias tengo de sobra
-          return extras > 1 ? `${s.id} (x${extras})` : s.id;
+          return `${s.id} (x${extras})`; // SIEMPRE mostrar la cantidad para evitar confusión
         })
         .join(', ');
       lines.push(`${getFlagEmoji(section)} ${section}: ${stickerList}`);

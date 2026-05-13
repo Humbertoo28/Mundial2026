@@ -162,6 +162,29 @@ export default function AlbumGrid({
         </button>
       </div>
 
+      {/* Global Repeated Count Info */}
+      {showOnlyRepeated && (
+        <div className="bg-[#E61D25]/10 border border-[#E61D25]/20 rounded-xl p-4 mb-8 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#E61D25] text-white p-2 rounded-lg">
+              <Layers className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-[#2A398D] dark:text-white text-lg">Tus Repetidas</h3>
+              <p className="text-sm text-[#474A4A]/80 dark:text-white/70">
+                Se muestran las figuritas únicas. Las cantidades exactas están en cada tarjeta.
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="block text-2xl font-black text-[#E61D25]">
+              {stickers.reduce((acc, s) => acc + Math.max(0, (inventory[s.id] || 0) - 1), 0)}
+            </span>
+            <span className="text-xs font-bold text-[#474A4A]/60 dark:text-white/50 uppercase tracking-wider">Copias Extra</span>
+          </div>
+        </div>
+      )}
+
       {/* Selector de Grupos */}
       <div className="mb-8">
         <div className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar">
