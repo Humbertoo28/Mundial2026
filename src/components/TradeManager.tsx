@@ -431,7 +431,7 @@ export default function TradeManager({
             
             <button
               onClick={handleExecuteTrade}
-              disabled={(selectedIds.size === 0 && receivedIds.length === 0) || isPending}
+              disabled={(totalSelectedCount === 0 && receivedIds.length === 0) || isPending}
               className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm bg-[#2A398D] text-white hover:bg-[#3CAC3B] disabled:opacity-30 disabled:grayscale transition-all shadow-xl active:scale-95"
             >
               {isPending ? (
