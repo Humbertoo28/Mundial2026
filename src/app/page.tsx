@@ -98,7 +98,7 @@ export default async function Home() {
 
   // Trade Stats calculation
   const totalTrades = tradeLogs?.length || 0;
-  const uniqueTradersCount = new Set(tradeLogs?.map(log => log.trader_name.toLowerCase())).size;
+  const uniqueTradersCount = new Set(tradeLogs?.map(log => (log.trader_name || '').toLowerCase())).size;
   const totalItemsTraded = tradeLogs?.reduce((acc, log) => acc + (log.given_ids?.length || 0) + (log.received_ids?.length || 0), 0) || 0;
 
   // Calculate missing per section and group
