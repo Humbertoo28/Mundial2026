@@ -58,8 +58,13 @@ export default function TradeManager({
 
   const addReceived = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const input = receivedInput.trim().toUpperCase();
+    let input = receivedInput.trim().toUpperCase();
     if (!input) return;
+    
+    // Si viene del datalist con formato "ID - NOMBRE", extraemos el ID
+    if (input.includes(' - ')) {
+      input = input.split(' - ')[0].trim();
+    }
     
     // Búsqueda jerárquica para mejor precisión
     const foundSticker = allStickers.find(s => 
@@ -257,7 +262,7 @@ export default function TradeManager({
                   </button>
                   <datalist id="sticker-list-premium">
                     {allStickers.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={`${s.id} - ${s.name}`} />
                     ))}
                   </datalist>
                 </form>
@@ -265,8 +270,13 @@ export default function TradeManager({
                 {/* Preview dinámico */}
                 <div className="min-h-[20px] mt-2 ml-4">
                   {(() => {
-                    const input = receivedInput.trim().toUpperCase();
+                    let input = receivedInput.trim().toUpperCase();
                     if (!input || input.length < 2) return null;
+
+                    // Si viene del datalist con formato "ID - NOMBRE", extraemos el ID
+                    if (input.includes(' - ')) {
+                      input = input.split(' - ')[0].trim();
+                    }
 
                     const match = allStickers.find(s => 
                       s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
