@@ -209,13 +209,13 @@ export default async function Home() {
         <AvatarSelector currentAvatar={profile?.avatar_url} />
       </div>
 
+      {/* Estadísticas de Intercambio y Compartir */}
+      <PersonalStatsShare stats={stats as any} username={displayName} />
+
       {/* Buscador de Amigos */}
       <div className="mb-12">
         <SearchFriends />
       </div>
-
-      {/* Estadísticas de Intercambio y Compartir */}
-      <PersonalStatsShare stats={stats as any} username={displayName} />
 
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
