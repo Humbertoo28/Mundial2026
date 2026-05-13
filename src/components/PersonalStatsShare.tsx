@@ -259,9 +259,15 @@ export default function PersonalStatsShare({
                 </p>
 
                 <div className="w-full space-y-4 mb-8">
-                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Tengo</p>
-                    <p className="text-2xl font-black text-[#3CAC3B]">{stats.tengo} <span className="text-xs text-white/40">figuritas</span></p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Tengo</p>
+                      <p className="text-xl font-black text-[#3CAC3B]">{stats.tengo}</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Faltantes</p>
+                      <p className="text-xl font-black text-[#E61D25]">{stats.faltan}</p>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -281,7 +287,7 @@ export default function PersonalStatsShare({
                      <img src={avatarUrl} alt={username} className="w-8 h-8 rounded-full border-2 border-white/50" />
                      <p className="text-white font-black italic text-lg tracking-tight">@{username}</p>
                    </div>
-                   <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">mundialhub.vercel.app</p>
+                   <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">MUNDIAL2026-INDOL.VERCEL.APP</p>
                 </div>
               </div>
             </div>
