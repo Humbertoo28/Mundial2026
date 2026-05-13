@@ -59,14 +59,21 @@ export default function TradeManager({
 
   const addReceived = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const id = receivedInput.trim().toUpperCase();
-    if (!id) return;
+    const input = receivedInput.trim().toUpperCase();
+    if (!input) return;
     
-    if (!stickerMap[id]) {
-      setError("El código no existe en el catálogo");
+    // Buscar por ID o por Nombre (normalizando espacios)
+    const foundSticker = allStickers.find(s => 
+      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
+      s.name.toUpperCase() === input
+    );
+
+    if (!foundSticker) {
+      setError("No se encontró la figurita por código ni por nombre");
       return;
     }
 
+    const id = foundSticker.id;
     if (receivedIds.includes(id)) {
       setError("Ya agregaste esta figurita");
       return;
@@ -198,17 +205,23 @@ export default function TradeManager({
               <form onSubmit={addReceived} className="flex gap-2 mb-2">
                 <input 
                   type="text"
-                  placeholder="Código (Ej: ARG01)"
+                  list="sticker-list"
+                  placeholder="Código o Nombre del Jugador"
                   value={receivedInput}
                   onChange={(e) => {
-                    setReceivedInput(e.target.value.toUpperCase());
+                    setReceivedInput(e.target.value);
                     setError(null);
                   }}
                   className="flex-1 bg-[#D1D4D1]/20 border border-[#474A4A]/20 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#3CAC3B] transition-colors"
                 />
+                <datalist id="sticker-list">
+                  {allStickers.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </datalist>
                 <button 
                   type="submit"
-                  disabled={!currentLookupName}
+                  disabled={!receivedInput.trim()}
                   className="bg-[#3CAC3B] text-white px-4 rounded-xl hover:scale-105 transition-all shadow-md disabled:opacity-50 disabled:grayscale"
                 >
                   <Plus className="h-5 w-5" />
@@ -217,17 +230,29 @@ export default function TradeManager({
               
               {/* Preview del nombre mientras escribe */}
               <div className="min-h-[24px] mb-4">
-                {currentLookupName ? (
-                  <div className="flex items-center gap-2 text-[10px] font-black text-[#3CAC3B] animate-in slide-in-from-left-2">
-                    <User className="h-3 w-3" />
-                    <span>{currentLookupName}</span>
-                    <span className="text-[#474A4A]/40 uppercase">({stickerMap[receivedInput]?.section})</span>
-                  </div>
-                ) : receivedInput.length >= 3 && (
-                  <div className="text-[10px] font-bold text-[#E61D25]/60 italic animate-in fade-in">
-                    Código no encontrado...
-                  </div>
-                )}
+                {(() => {
+                  const input = receivedInput.trim().toUpperCase();
+                  const match = stickerMap[input] || allStickers.find(s => s.name.toUpperCase() === input || s.id === input);
+                  
+                  if (match) {
+                    return (
+                      <div className="flex items-center gap-2 text-[10px] font-black text-[#3CAC3B] animate-in slide-in-from-left-2">
+                        <User className="h-3 w-3" />
+                        <span>{match.name}</span>
+                        <span className="text-[#474A4A]/40 uppercase">({match.section || (match as any).section})</span>
+                      </div>
+                    );
+                  }
+                  
+                  if (receivedInput.length >= 3) {
+                    return (
+                      <div className="text-[10px] font-bold text-[#E61D25]/60 italic animate-in fade-in">
+                        Buscando...
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
 
