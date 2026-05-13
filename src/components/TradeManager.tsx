@@ -218,34 +218,48 @@ export default function TradeManager({
                 </div>
                 <div className="flex-1">
                   <label className="text-[10px] font-black text-[#2A398D] uppercase tracking-widest block mb-1">Intercambiando con</label>
-                  <input 
-                    type="text" 
-                    placeholder="Escribe el nombre..." 
-                    value={traderName}
-                    onChange={(e) => setTraderName(e.target.value)}
-                    className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] placeholder:text-[#2A398D]/30"
-                  />
+                  <select 
+                    value={traderName === 'Otro (Fuera del sistema)' ? 'Otro (Fuera del sistema)' : (allProfiles.includes(traderName.replace('@', '')) ? traderName : (traderName ? 'custom' : ''))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'custom' || val === 'Otro (Fuera del sistema)') {
+                        setTraderName('Otro (Fuera del sistema)');
+                      } else {
+                        setTraderName(val);
+                      }
+                    }}
+                    className="w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 text-sm font-bold text-[#2A398D] appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Seleccionar usuario...</option>
+                    <option value="Otro (Fuera del sistema)">👤 Otro (Persona fuera del sistema)</option>
+                    {allProfiles.map(username => (
+                      <option key={username} value={`@${username}`}>@ {username}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               
-              {/* Sugerencias Rápidas */}
-              <div className="flex flex-wrap gap-2 mt-3 ml-11">
-                <button 
-                  onClick={() => setTraderName('Otro (Fuera del sistema)')}
-                  className="text-[9px] font-black uppercase px-3 py-1.5 bg-[#2A398D]/10 text-[#2A398D] rounded-full hover:bg-[#2A398D] hover:text-white transition-all border border-[#2A398D]/10"
-                >
-                  Otro
-                </button>
-                {allProfiles.slice(0, 5).map(username => (
-                  <button 
-                    key={username}
-                    onClick={() => setTraderName(`@${username}`)}
-                    className="text-[9px] font-black uppercase px-3 py-1.5 bg-white/50 text-[#2A398D]/60 rounded-full hover:bg-[#2A398D] hover:text-white transition-all border border-[#2A398D]/10"
-                  >
-                    @{username}
-                  </button>
-                ))}
-              </div>
+              {/* Campo manual si elige "Otro" */}
+              {traderName === 'Otro (Fuera del sistema)' && (
+                <div className="mt-3 ml-11 animate-in slide-in-from-top-2 duration-200">
+                  <input 
+                    type="text" 
+                    placeholder="Escribe el nombre de la persona..." 
+                    autoFocus
+                    onChange={(e) => {
+                      // Al escribir, mantenemos una marca interna o simplemente actualizamos el valor final
+                      // Pero para que no se cierre el select, lo manejaremos con cuidado
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value.trim()) {
+                        setTraderName(e.target.value.trim());
+                      }
+                    }}
+                    className="w-full bg-white/50 border border-[#2A398D]/20 rounded-xl px-4 py-2 text-sm font-bold text-[#2A398D] focus:outline-none focus:border-[#2A398D] transition-all"
+                  />
+                  <p className="text-[9px] font-bold text-[#2A398D]/40 uppercase mt-1 ml-1">Escribe el nombre y presiona fuera para confirmar</p>
+                </div>
+              )}
             </div>
 
             {/* Columna Izquierda: Lo que doy */}
