@@ -14,13 +14,13 @@ type RepeatedSticker = {
 };
 
 export default function TradeManager({ 
-  repeatedStickers,
-  allStickers,
+  repeatedStickers = [],
+  allStickers = [],
   allProfiles = [],
   onUpdate 
 }: { 
-  repeatedStickers: RepeatedSticker[];
-  allStickers: { id: string, name: string, section: string }[];
+  repeatedStickers?: RepeatedSticker[];
+  allStickers?: { id: string, name: string, section: string }[];
   allProfiles?: string[];
   onUpdate?: () => void;
 }) {
@@ -43,7 +43,7 @@ export default function TradeManager({
   const stickerMap = useMemo(() => {
     const map: Record<string, { name: string, section: string }> = {};
     allStickers.forEach(s => {
-      map[s.id] = { name: s.name, section: s.section };
+      if (s?.id) map[s.id] = { name: s.name || '', section: s.section || '' };
     });
     return map;
   }, [allStickers]);
@@ -88,15 +88,15 @@ export default function TradeManager({
     
     // Búsqueda jerárquica para mejor precisión
     const foundSticker = allStickers.find(s => 
-      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || // ID exacto
-      s.name.toUpperCase() === input // Nombre exacto
+      s?.id?.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || // ID exacto
+      (s?.name && s.name.toUpperCase() === input) // Nombre exacto
     ) || allStickers.find(s => 
-      s.name.toUpperCase().startsWith(input) // Empieza por...
+      s?.name && s.name.toUpperCase().startsWith(input) // Empieza por...
     ) || allStickers.find(s => 
-      s.name.toUpperCase().includes(input) // Contiene...
+      s?.name && s.name.toUpperCase().includes(input) // Contiene...
     );
 
-    if (!foundSticker) {
+    if (!foundSticker || !foundSticker.id) {
       setError("No se encontró ninguna figurita con ese nombre o código");
       return;
     }
@@ -402,12 +402,12 @@ export default function TradeManager({
                     }
 
                     const match = allStickers.find(s => 
-                      s.id.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
-                      s.name.toUpperCase() === input
+                      s?.id?.replace(/\s/g, '').toUpperCase() === input.replace(/\s/g, '') || 
+                      (s?.name && s.name.toUpperCase() === input)
                     ) || allStickers.find(s => 
-                      s.name.toUpperCase().startsWith(input)
+                      s?.name && s.name.toUpperCase().startsWith(input)
                     ) || allStickers.find(s => 
-                      s.name.toUpperCase().includes(input)
+                      s?.name && s.name.toUpperCase().includes(input)
                     );
 
                     if (match) {
