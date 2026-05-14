@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: [
-              'camera=()',
+              'camera=(self)',
               'microphone=()',
               'geolocation=()',
               'interest-cohort=()', // Deshabilita FLoC de Google
