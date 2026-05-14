@@ -75,27 +75,56 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   }, [isOpen, useNative]);
 
   const matchText = useCallback((text: string): string | null => {
-    // Regex for 3 letters + number (e.g., POR 14, ARG 10)
-    const pattern = /[A-Z]{3}\s*\d+/g;
-    const matches = text.toUpperCase().match(pattern) || [];
+    if (!text) return null;
     
-    // Try explicit matches first
-    for (const m of matches) {
-      const cleaned = m.replace(/\s/g, '');
-      if (normalizedMap.current[cleaned]) return normalizedMap.current[cleaned];
+    // 1. Limpieza agresiva: Solo letras y números, todo en mayúsculas
+    const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // 2. Correcciones comunes de OCR (errores típicos de la IA)
+    const normalizedText = cleanText
+      .replace(/P0R/g, 'POR')
+      .replace(/PQ R/g, 'POR')
+      .replace(/PQR/g, 'POR')
+      .replace(/F0R/g, 'POR')
+      .replace(/0/g, 'O') // Solo si está en la parte de letras (esto es arriesgado, mejor por partes)
+      .replace(/I/g, '1')
+      .replace(/L/g, '1');
+
+    console.log('[Scanner] Raw text cleaned:', cleanText);
+
+    // 3. Intento de match directo con limpieza
+    if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
+
+    // 4. Buscar patrones de 3 letras + números en el texto sucio
+    const pattern = /([A-Z]{3}|[A-Z0-9]{3})\s*(\d+)/g;
+    let match;
+    while ((match = pattern.exec(text.toUpperCase())) !== null) {
+      let prefix = match[1].replace(/0/g, 'O').replace(/1/g, 'I'); // Corregir letras
+      let num = match[2];
+      const candidate = (prefix + num).replace(/\s/g, '');
+      
+      if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
+      
+      // Probar variaciones comunes
+      const variations = [
+        candidate.replace('P0R', 'POR').replace('PQR', 'POR').replace('F0R', 'POR'),
+        candidate.replace('ARG', 'ARG').replace('AR6', 'ARG')
+      ];
+      
+      for (const v of variations) {
+        if (normalizedMap.current[v]) return normalizedMap.current[v];
+      }
     }
 
-    // Fallback to word-by-word
-    const words = text.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+    // 5. Búsqueda por palabras con corrección individual
+    const words = text.toUpperCase().split(/\s+/).filter(w => w.length >= 2);
     for (const w of words) {
-      if (normalizedMap.current[w]) return normalizedMap.current[w];
+      const cw = w.replace(/[^A-Z0-9]/g, '')
+                 .replace('P0R', 'POR')
+                 .replace('PQR', 'POR');
+      if (normalizedMap.current[cw]) return normalizedMap.current[cw];
     }
-    
-    // Try combined pairs
-    for (let i = 0; i < words.length - 1; i++) {
-      const combined = words[i] + words[i + 1];
-      if (normalizedMap.current[combined]) return normalizedMap.current[combined];
-    }
+
     return null;
   }, []);
 
