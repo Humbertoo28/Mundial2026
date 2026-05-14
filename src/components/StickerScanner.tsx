@@ -171,11 +171,25 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setIsScanning(true);
     setError(null);
 
-    if (!ocrReady) await preloadOcrEngine();
-    const worker = getWorker();
-    if (!worker) { setError('No se pudo cargar la IA.'); setIsScanning(false); return; }
-
     try {
+      // Si no está lista, intentamos precargarla y esperamos un poco
+      if (!ocrReady) {
+        await preloadOcrEngine();
+        // Esperamos hasta 5 segundos a que el estado cambie a listo
+        let checks = 0;
+        while (!getOcrStatus().isReady && checks < 10) {
+          await new Promise(r => setTimeout(r, 500));
+          checks++;
+        }
+      }
+
+      const worker = getWorker();
+      if (!worker) { 
+        setError('La IA aún se está descargando. Espera un momento y reintenta.'); 
+        setIsScanning(false); 
+        return; 
+      }
+
       const { data: { text } } = await worker.recognize(url);
       const found = matchText(text);
       if (found) {
@@ -183,9 +197,12 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         onDetected(found);
         setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
       } else {
-        setError('No se detectó el número. Intenta con mejor luz.');
+        setError('No se detectó el número. Asegúrate que la foto sea clara y esté bien iluminada.');
       }
-    } catch { setError('Error al procesar la imagen.'); }
+    } catch (err) { 
+      console.error('[OCR] Photo error:', err);
+      setError('Error al procesar la imagen. Inténtalo de nuevo.'); 
+    }
     setIsScanning(false);
   };
 
