@@ -30,14 +30,15 @@ export function preloadOcrEngine(): Promise<boolean> {
         // Configuramos el worker usando los valores por defecto de la librería 
         // pero manteniendo el modelo de datos rápido (fast).
         const worker = await createWorker('eng', 1, {
-          langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
-          // No forzamos paths de CDN externos para evitar bloqueos de CORS/Red
+          // Usamos un CDN más confiable y rápido para los datos de la IA
+          langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast',
           logger: m => console.log('[OCR]', m.status)
         });
 
         await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
           tessedit_pageseg_mode: '1' as any,
+          tessedit_ocr_engine_mode: '1' as any, // LSTM ONLY para velocidad
         });
 
         workerInstance = worker;
