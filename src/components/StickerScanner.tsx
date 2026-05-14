@@ -1,9 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { createWorker, Worker } from 'tesseract.js';
-import { Camera, X, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Camera, X, Loader2, CheckCircle2, AlertCircle, RefreshCw, Search, Type } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Extend Window type for TextDetector (experimental API)
+declare global {
+  interface Window {
+    TextDetector: new () => {
+      detect(image: HTMLVideoElement | HTMLCanvasElement): Promise<Array<{ rawValue: string }>>;
+    };
+  }
+}
 
 type StickerScannerProps = {
   isOpen: boolean;
@@ -14,337 +22,300 @@ type StickerScannerProps = {
 
 export default function StickerScanner({ isOpen, onClose, onDetected, validIds }: StickerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const workerRef = useRef<Worker | null>(null);
-  
-  const [isCameraReady, setIsCameraReady] = useState(false);
-  const [isWorkerReady, setIsWorkerReady] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [detectedId, setDetectedId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
-  const [initMessage, setInitMessage] = useState('Iniciando cámara...');
-  const [loadingProgress, setLoadingProgress] = useState(0);
+  const detectorRef = useRef<InstanceType<typeof window.TextDetector> | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Pre-normalize valid IDs for easier matching
-  const normalizedValidIds = useRef<Record<string, string>>({});
+  const [mode, setMode] = useState<'checking' | 'camera' | 'manual' | 'unsupported'>('checking');
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'scanning' | 'success'>('idle');
+  const [detectedId, setDetectedId] = useState<string | null>(null);
+  const [manualInput, setManualInput] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // Pre-normalize valid IDs
+  const normalizedMap = useRef<Record<string, string>>({});
   useEffect(() => {
     const map: Record<string, string> = {};
     validIds.forEach(id => {
       map[id.replace(/\s/g, '').toUpperCase()] = id;
     });
-    normalizedValidIds.current = map;
+    normalizedMap.current = map;
   }, [validIds]);
 
-  const initWorker = async () => {
-    if (workerRef.current && isWorkerReady) return true;
-    
-    try {
-      console.log("Initializing Tesseract worker...");
-      setLoadingProgress(0);
-      
-      const worker = await createWorker('eng', 1, {
-        logger: m => {
-          console.log(m.status, m.progress);
-          if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
-            setLoadingProgress(Math.round(m.progress * 100));
-          }
-        },
-        // Use default worker/core paths but specify fast data
-        langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
-      });
-      
-      await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
-        tessedit_pageseg_mode: '1' as any, // Single line/word mode is faster
-      });
-      
-      workerRef.current = worker;
-      setIsWorkerReady(true);
-      return true;
-    } catch (err) {
-      console.error("Error initializing Tesseract:", err);
-      // Don't block if already failed once, just show a message
-      return false;
+  // Check for TextDetector support on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'TextDetector' in window) {
+      try {
+        detectorRef.current = new window.TextDetector();
+        setMode('camera');
+      } catch {
+        setMode('manual');
+      }
+    } else {
+      // TextDetector not supported — go straight to manual
+      setMode('manual');
     }
-  };
+  }, []);
 
+  const handleDetect = useCallback((rawId: string) => {
+    setDetectedId(rawId);
+    setStatus('success');
+    onDetected(rawId);
+    // Auto-reset after 2s so user can scan another
+    setTimeout(() => {
+      setStatus('idle');
+      setDetectedId(null);
+    }, 2500);
+  }, [onDetected]);
+
+  // --- Camera mode ---
   const startCamera = async () => {
-    setIsInitializing(true);
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment', 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
-        }
+        video: { facingMode: 'environment' }
       });
-      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play()
-            .then(() => {
-              setIsCameraReady(true);
-              setIsInitializing(false);
-              setInitMessage('Cargando motor de IA...');
-            })
-            .catch(e => {
-              console.error("Play prevented", e);
-              setError("Error al reproducir el video.");
-            });
+          videoRef.current?.play().then(() => setIsCameraReady(true));
         };
       }
-
-      // Initialize Tesseract in background
-      initWorker();
-      
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setError("Permiso de cámara denegado o no disponible.");
-      setIsInitializing(false);
+    } catch {
+      setError('No se pudo acceder a la cámara.');
     }
   };
 
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+  const stopCamera = useCallback(() => {
+    if (videoRef.current?.srcObject) {
+      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
       videoRef.current.srcObject = null;
     }
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
     setIsCameraReady(false);
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-    return () => stopCamera();
-  }, [isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
   }, []);
 
+  // Start/stop camera when scanner opens/closes
+  useEffect(() => {
+    if (!isOpen) { stopCamera(); return; }
+    if (mode === 'camera') startCamera();
+    return () => stopCamera();
+  }, [isOpen, mode, stopCamera]);
+
+  // Scanning loop using native TextDetector
   const processFrame = useCallback(async () => {
-    if (!isCameraReady || !isWorkerReady || !videoRef.current || !canvasRef.current || status === 'success' || !workerRef.current) return;
-
+    if (!isCameraReady || !videoRef.current || !detectorRef.current || status !== 'idle') return;
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    
-    if (video.videoWidth === 0 || video.videoHeight === 0) return;
-
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    if (!context) return;
-
-    // We scan a wider but shorter area for the ID at the top/bottom
-    const targetWidth = 400;
-    const targetHeight = 150;
-    const startX = (video.videoWidth - targetWidth) / 2;
-    const startY = (video.videoHeight - targetHeight) / 2;
-
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    context.drawImage(video, startX, startY, targetWidth, targetHeight, 0, 0, targetWidth, targetHeight);
+    if (video.videoWidth === 0) return;
 
     setStatus('scanning');
-
     try {
-      const { data: { text } } = await workerRef.current.recognize(canvas);
-      const cleanedText = text.replace(/[^A-Z0-9\s]/gi, '').toUpperCase();
-      const words = cleanedText.split(/\s+/);
-      
+      const results = await detectorRef.current.detect(video);
       let foundId: string | null = null;
 
-      // Check single words
-      for (const word of words) {
-        if (normalizedValidIds.current[word]) {
-          foundId = normalizedValidIds.current[word];
-          break;
+      for (const result of results) {
+        // Each result can have multiple lines; try words and combinations
+        const words = result.rawValue.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/);
+        for (const word of words) {
+          if (normalizedMap.current[word]) { foundId = normalizedMap.current[word]; break; }
         }
-      }
-
-      // Check combined words
-      if (!foundId) {
-        for (let i = 0; i < words.length - 1; i++) {
-          const combined = words[i] + words[i+1];
-          if (normalizedValidIds.current[combined]) {
-            foundId = normalizedValidIds.current[combined];
-            break;
+        if (!foundId) {
+          for (let i = 0; i < words.length - 1; i++) {
+            const combined = words[i] + words[i + 1];
+            if (normalizedMap.current[combined]) { foundId = normalizedMap.current[combined]; break; }
           }
         }
+        if (foundId) break;
       }
 
       if (foundId) {
-        setDetectedId(foundId);
-        setStatus('success');
-        onDetected(foundId);
-        setTimeout(() => {
-          setStatus('idle');
-          setDetectedId(null);
-        }, 3000);
+        handleDetect(foundId);
       } else {
         setStatus('idle');
       }
-    } catch (err) {
-      console.error("OCR Error:", err);
+    } catch {
       setStatus('idle');
     }
-  }, [isCameraReady, isWorkerReady, status, onDetected]);
+  }, [isCameraReady, status, handleDetect]);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    const runScan = async () => {
-      if (isCameraReady && isWorkerReady && status === 'idle') {
-        await processFrame();
-      }
-      timeout = setTimeout(runScan, 1000);
-    };
-    if (isCameraReady && isWorkerReady && status === 'idle') {
-      timeout = setTimeout(runScan, 1000);
-    }
-    return () => clearTimeout(timeout);
-  }, [isCameraReady, isWorkerReady, status, processFrame]);
+    if (!isCameraReady || mode !== 'camera') return;
+    scanIntervalRef.current = setInterval(processFrame, 700);
+    return () => { if (scanIntervalRef.current) clearInterval(scanIntervalRef.current); };
+  }, [isCameraReady, mode, processFrame]);
+
+  // --- Manual mode ---
+  useEffect(() => {
+    if (!manualInput.trim()) { setSuggestions([]); return; }
+    const q = manualInput.replace(/\s/g, '').toUpperCase();
+    const found = validIds
+      .filter(id => id.replace(/\s/g, '').toUpperCase().includes(q))
+      .slice(0, 8);
+    setSuggestions(found);
+  }, [manualInput, validIds]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         className="relative w-full max-w-lg bg-[#0D0D0D] border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
       >
+        {/* Header */}
         <div className="p-4 flex justify-between items-center border-b border-white/10 shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Camera className="h-5 w-5 text-[#2A398D]" />
             <h2 className="font-bold text-white text-sm">Escáner de Figuritas</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/60">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="relative flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
-          {isInitializing && (
-            <div className="flex flex-col items-center gap-4 p-6 text-center z-10">
-              <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />
-              <p className="text-white/80 font-medium text-sm">{initMessage}</p>
-            </div>
-          )}
-          
-          {error && (
-            <div className="p-8 text-center z-10 absolute inset-0 bg-black flex flex-col items-center justify-center">
-              <AlertCircle className="h-12 w-12 text-[#E61D25] mb-4" />
-              <p className="text-white text-sm mb-6">{error}</p>
-              <button onClick={startCamera} className="bg-[#2A398D] text-white px-6 py-2 rounded-xl font-bold text-sm">
-                Reintentar
+          <div className="flex items-center gap-2">
+            {mode === 'camera' && (
+              <button
+                onClick={() => { stopCamera(); setMode('manual'); setManualInput(''); }}
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-1.5"
+              >
+                <Type className="h-3 w-3" /> Manual
               </button>
-            </div>
-          )}
+            )}
+            {mode === 'manual' && 'TextDetector' in (typeof window !== 'undefined' ? window : {}) && (
+              <button
+                onClick={() => { setMode('camera'); setManualInput(''); setSuggestions([]); }}
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-1.5"
+              >
+                <Camera className="h-3 w-3" /> Cámara
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/60 transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
 
-          <video 
-            ref={videoRef}
-            playsInline 
-            autoPlay
-            muted 
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isCameraReady ? 'opacity-100' : 'opacity-0'}`}
-          />
-          
-          {isCameraReady && !isWorkerReady && !error && (
-            <div className="absolute top-4 left-4 right-4 z-30">
-              <div className="bg-black/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-[#2A398D]/50">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 text-[#2A398D] animate-spin" />
-                    <span className="text-white text-xs font-bold uppercase tracking-wider">Iniciando IA...</span>
+        {/* Body */}
+        {mode === 'checking' && (
+          <div className="flex-1 min-h-[200px] flex items-center justify-center">
+            <Loader2 className="h-8 w-8 text-[#2A398D] animate-spin" />
+          </div>
+        )}
+
+        {/* ---- CAMERA MODE ---- */}
+        {mode === 'camera' && (
+          <div className="relative flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
+            {error && (
+              <div className="p-8 text-center z-10 absolute inset-0 bg-black flex flex-col items-center justify-center">
+                <AlertCircle className="h-12 w-12 text-[#E61D25] mb-4" />
+                <p className="text-white text-sm mb-6">{error}</p>
+                <button onClick={startCamera} className="bg-[#2A398D] text-white px-6 py-2 rounded-xl font-bold text-sm flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" /> Reintentar
+                </button>
+              </div>
+            )}
+
+            {!isCameraReady && !error && (
+              <div className="z-10 flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 text-[#2A398D] animate-spin" />
+                <p className="text-white/70 text-sm font-medium">Iniciando cámara...</p>
+              </div>
+            )}
+
+            <video
+              ref={videoRef}
+              playsInline autoPlay muted
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isCameraReady ? 'opacity-100' : 'opacity-0'}`}
+            />
+
+            {/* Scan Frame */}
+            {isCameraReady && !error && (
+              <>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="relative w-64 h-28 border-2 border-white/20 rounded-xl">
+                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-[#2A398D] rounded-tl-md" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-[#2A398D] rounded-tr-md" />
+                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-[#2A398D] rounded-bl-md" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-[#2A398D] rounded-br-md" />
+                    <motion.div
+                      animate={{ top: ['0%', '100%', '0%'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      className="absolute left-0 right-0 h-0.5 bg-[#2A398D] shadow-[0_0_8px_#2A398D]"
+                    />
                   </div>
-                  <span className="text-[#2A398D] text-xs font-black">{loadingProgress}%</span>
                 </div>
-                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${loadingProgress}%` }}
-                    className="h-full bg-[#2A398D] shadow-[0_0_10px_#2A398D]"
-                  />
+
+                {/* Status pill */}
+                <div className="absolute bottom-4 left-4 right-4 flex justify-center z-20">
+                  <AnimatePresence mode="wait">
+                    {status === 'scanning' && (
+                      <motion.div key="s" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className="bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
+                        <Loader2 className="h-3 w-3 text-[#2A398D] animate-spin" />
+                        <span className="text-white text-[10px] font-bold uppercase tracking-widest">Leyendo...</span>
+                      </motion.div>
+                    )}
+                    {status === 'success' && (
+                      <motion.div key="ok" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        className="bg-[#3CAC3B] px-6 py-2 rounded-full flex items-center gap-2 shadow-lg">
+                        <CheckCircle2 className="h-5 w-5 text-white" />
+                        <span className="text-white font-black uppercase italic text-lg">{detectedId}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
+          </div>
+        )}
 
-          {isCameraReady && isWorkerReady && !error && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="relative w-64 h-32 border-2 border-white/30 rounded-xl">
-                <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#2A398D] rounded-tl-lg" />
-                <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#2A398D] rounded-tr-lg" />
-                <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#2A398D] rounded-bl-lg" />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#2A398D] rounded-br-lg" />
-                <motion.div 
-                  animate={{ top: ['0%', '100%', '0%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="absolute left-0 right-0 h-0.5 bg-[#2A398D] shadow-[0_0_10px_#2A398D]"
-                />
-              </div>
+        {/* ---- MANUAL MODE ---- */}
+        {mode === 'manual' && (
+          <div className="flex-1 flex flex-col p-5 gap-4 overflow-hidden">
+            <div className="text-center py-2">
+              <Search className="h-10 w-10 text-[#2A398D] mx-auto mb-2" />
+              <p className="text-white font-bold">Búsqueda rápida</p>
+              <p className="text-white/50 text-xs mt-1">Escribe el número de la figurita</p>
             </div>
-          )}
 
-          {isCameraReady && isWorkerReady && !error && (
-            <div className="absolute bottom-4 left-4 right-4 flex justify-center z-20">
-              <AnimatePresence mode="wait">
-                {status === 'scanning' && (
-                  <motion.div 
-                    key="scanning"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 border border-white/10"
-                  >
-                    <Loader2 className="h-3 w-3 text-[#2A398D] animate-spin" />
-                    <span className="text-white text-[10px] font-bold uppercase tracking-widest">Buscando número...</span>
-                  </motion.div>
-                )}
-                {status === 'success' && (
-                  <motion.div 
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="bg-[#3CAC3B] px-6 py-2 rounded-full flex items-center gap-2 shadow-lg"
-                  >
-                    <CheckCircle2 className="h-5 w-5 text-white" />
-                    <span className="text-white font-black uppercase italic tracking-tighter text-lg">
-                      {detectedId}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="ej. ARG 1, FWC 22..."
+                value={manualInput}
+                onChange={e => setManualInput(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-xl pl-9 pr-4 py-3 focus:outline-none focus:border-[#2A398D] placeholder:text-white/20 text-sm font-medium"
+              />
             </div>
-          )}
-        </div>
 
-        <div className="p-6 bg-[#1A1A1A] shrink-0 border-t border-white/5">
-          <h3 className="text-white font-bold text-xs mb-3 uppercase tracking-widest opacity-60">Instrucciones:</h3>
-          <ul className="text-white/80 text-xs space-y-2.5">
-            <li className="flex items-center gap-3">
-              <span className="bg-[#2A398D] text-white w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 font-bold">1</span>
-              Enfoca el número arriba a la derecha (ej. FWC 22).
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="bg-[#2A398D] text-white w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 font-bold">2</span>
-              Mantén el pulso firme y con buena luz.
-            </li>
-          </ul>
-        </div>
-        <canvas ref={canvasRef} className="hidden" />
+            {/* Suggestions */}
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {suggestions.length === 0 && manualInput.length > 0 && (
+                <p className="text-white/30 text-xs text-center py-8">No se encontraron resultados</p>
+              )}
+              {suggestions.map(id => (
+                <button
+                  key={id}
+                  onClick={() => { handleDetect(id); onClose(); }}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-[#2A398D]/30 border border-white/5 hover:border-[#2A398D]/40 transition-all group flex items-center justify-between"
+                >
+                  <span className="text-white font-bold text-sm">{id}</span>
+                  <span className="text-white/30 text-[10px] font-bold uppercase tracking-wider group-hover:text-[#2A398D] transition-colors">Seleccionar →</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer hint */}
+        {mode === 'camera' && isCameraReady && (
+          <div className="p-4 bg-[#1A1A1A] shrink-0 border-t border-white/5">
+            <p className="text-white/40 text-xs text-center">
+              📌 Apunta el número de la figurita hacia el recuadro con buena iluminación
+            </p>
+          </div>
+        )}
       </motion.div>
     </div>
   );
