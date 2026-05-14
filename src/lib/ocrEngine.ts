@@ -21,28 +21,43 @@ export function preloadOcrEngine(): Promise<boolean> {
 
   loadPromise = (async () => {
     isLoading = true;
-    try {
-      const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker('eng', 1, {
-        langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
-        logger: m => {
-          // silent in background
-        },
-      });
-      await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
-      });
-      workerInstance = worker;
-      isReady = true;
-      isLoading = false;
-      console.log('[OCR] Engine ready');
-      return true;
-    } catch (err) {
-      console.error('[OCR] Failed to preload:', err);
-      isLoading = false;
-      loadPromise = null; // allow retry
-      return false;
+    let retries = 2;
+    
+    while (retries > 0) {
+      try {
+        const { createWorker } = await import('tesseract.js');
+        
+        // Configuramos el worker usando los valores por defecto de la librería 
+        // pero manteniendo el modelo de datos rápido (fast).
+        const worker = await createWorker('eng', 1, {
+          langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
+          // No forzamos paths de CDN externos para evitar bloqueos de CORS/Red
+          logger: m => console.log('[OCR]', m.status)
+        });
+
+        await worker.setParameters({
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
+          tessedit_pageseg_mode: '1' as any,
+        });
+
+        workerInstance = worker;
+        isReady = true;
+        isLoading = false;
+        console.log('[OCR] Engine ready');
+        return true;
+      } catch (err) {
+        console.error(`[OCR] Load attempt failed (${retries} retries left):`, err);
+        retries--;
+        if (retries === 0) {
+          isLoading = false;
+          loadPromise = null;
+          return false;
+        }
+        // Wait a bit before retry
+        await new Promise(r => setTimeout(r, 1000));
+      }
     }
+    return false;
   })();
 
   return loadPromise;
