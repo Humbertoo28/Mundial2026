@@ -126,24 +126,91 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   // ---- CAMERA ----
   const startCamera = async () => {
+    if (isCameraActive) return;
     setError(null);
+    setIsCameraActive(false);
+    console.log('[Scanner] Intentando iniciar cámara...');
+    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Tu navegador no tiene acceso a la cámara. Asegúrate de usar Chrome o Samsung Internet y que el sitio sea HTTPS.');
+      }
+
+      // Intentamos con diferentes configuraciones de mayor a menor compatibilidad
+      const attempts = [
+        { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+        { video: { facingMode: 'environment' } },
+        { video: true }
+      ];
+
+      let stream: MediaStream | null = null;
+      let lastErr: any = null;
+
+      for (const constraints of attempts) {
+        try {
+          console.log('[Scanner] Probando constraints:', constraints);
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (stream) break;
+        } catch (e) {
+          console.warn('[Scanner] Falló intento:', constraints, e);
+          lastErr = e;
+        }
+      }
+
+      if (!stream) {
+        throw lastErr || new Error('No se pudo obtener el flujo de video.');
+      }
+
+      console.log('[Scanner] Stream obtenido con éxito');
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await new Promise<void>((resolve) => {
-          videoRef.current!.onloadedmetadata = () => {
-            videoRef.current!.play().then(() => {
-              setIsCameraActive(true);
-              resolve();
-            });
-          };
-        });
+        
+        // Forzar play y manejar promesas
+        try {
+          // Algunos navegadores requieren load() antes de play()
+          videoRef.current.load();
+          
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar cámara.')), 8000);
+            
+            if (!videoRef.current) return;
+
+            videoRef.current.onloadedmetadata = async () => {
+              clearTimeout(timeout);
+              try {
+                await videoRef.current!.play();
+                console.log('[Scanner] Video reproduciéndose');
+                setIsCameraActive(true);
+                resolve();
+              } catch (playErr) {
+                reject(playErr);
+              }
+            };
+            
+            videoRef.current.onerror = (e) => {
+              clearTimeout(timeout);
+              reject(new Error('Error en el elemento de video del sistema.'));
+            };
+          });
+        } catch (playErr) {
+          console.error('[Scanner] Error al reproducir video:', playErr);
+          throw new Error('No se pudo iniciar la reproducción del video. Intenta refrescar la página.');
+        }
       }
-    } catch {
-      setError('No se pudo acceder a la cámara.');
+    } catch (err: any) {
+      console.error('[Scanner] Error final de cámara:', err);
+      let msg = 'Error al abrir la cámara.';
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError') {
+        msg = 'Permiso de cámara denegado. Ve a los ajustes del sitio en tu navegador y habilita la cámara.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        msg = 'No se detectó ninguna cámara en este dispositivo.';
+      } else {
+        msg = err.message || msg;
+      }
+      
+      setError(msg);
     }
   };
 
@@ -365,12 +432,35 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         <div className="relative flex-1 min-h-[350px] bg-black flex items-center justify-center overflow-hidden">
           {mode === 'camera' && (
             <>
-              <video ref={videoRef} playsInline autoPlay muted className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isCameraActive ? 'opacity-100' : 'opacity-0'}`} />
+              <video 
+                ref={videoRef} 
+                playsInline 
+                autoPlay 
+                muted 
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isCameraActive ? 'opacity-100' : 'opacity-0'}`} 
+              />
               
               {!isCameraActive && !error && (
                 <div className="z-10 flex flex-col items-center gap-3">
-                  <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />
-                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Iniciando...</p>
+                  <div className="relative">
+                    <Loader2 className="h-12 w-12 text-[#2A398D] animate-spin" />
+                    <Camera className="absolute inset-0 m-auto h-5 w-5 text-white/50" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white text-sm font-bold uppercase tracking-widest mb-1">Iniciando Cámara</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest">Acepta los permisos si aparecen</p>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="z-20 absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/90">
+                  <AlertCircle className="h-12 w-12 text-[#E61D25] mb-4" />
+                  <p className="text-white text-center font-bold text-sm mb-2">{error}</p>
+                  <p className="text-white/50 text-center text-xs mb-6">En Android es necesario usar HTTPS para acceder a la cámara. Prueba usar el Modo Foto.</p>
+                  <button onClick={() => setMode('photo')} className="bg-[#2A398D] text-white px-6 py-3 rounded-full font-black uppercase text-xs tracking-widest">
+                    Ir al Modo Foto
+                  </button>
                 </div>
               )}
 

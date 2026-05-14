@@ -268,3 +268,25 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   revalidatePath('/album');
   return { success: true };
 }
+
+export async function clearRepeatedStickers() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("No autenticado");
+  const userId = session.user.id;
+
+  // Rate limit
+  const rl = checkRateLimit(userId, 'clearRepeated', 5, 60_000); 
+  if (!rl.allowed) throw new Error("Espera un momento antes de volver a borrar.");
+
+  const { error } = await supabase
+    .from('user_stickers')
+    .update({ quantity: 1 })
+    .eq('user_id', userId)
+    .gt('quantity', 1);
+
+  if (error) throw new Error("Error al borrar las repetidas");
+
+  revalidatePath('/');
+  revalidatePath('/album');
+  return { success: true };
+}

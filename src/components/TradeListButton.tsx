@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Check, Copy, RefreshCw, Download } from 'lucide-react';
+import { MessageSquare, Check, Copy, RefreshCw, Download, Trash2, AlertCircle } from 'lucide-react';
 import { getFlagEmoji } from '@/lib/flags';
 import TradeManager from './TradeManager';
+import { clearRepeatedStickers } from '@/app/actions/stickers';
+import { useTransition } from 'react';
 
 type RepeatedSticker = {
   sticker_id: string;
@@ -25,6 +27,8 @@ export default function TradeListButton({
 }) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const generateTradeText = () => {
     if (repeatedStickers.length === 0) return null;
@@ -103,6 +107,18 @@ export default function TradeListButton({
     // Abrir WhatsApp directamente
     const encodedText = encodeURIComponent(tradeText);
     window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+  };
+
+  const handleClearAll = () => {
+    startTransition(async () => {
+      try {
+        await clearRepeatedStickers();
+        setShowConfirm(false);
+      } catch (err) {
+        console.error(err);
+        alert("Error al borrar las repetidas");
+      }
+    });
   };
 
   if (repeatedStickers.length === 0) {
@@ -222,6 +238,37 @@ export default function TradeListButton({
             <Download className="h-4 w-4" />
             Descargar PDF
           </button>
+
+          {/* Botón Borrar Repetidas */}
+          <div className="relative">
+            {!showConfirm ? (
+              <button
+                onClick={() => setShowConfirm(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#E61D25]/10 text-[#E61D25] hover:bg-[#E61D25] hover:text-white transition-all border border-[#E61D25]/20 active:scale-95"
+              >
+                <Trash2 className="h-4 w-4" />
+                Borrar Repetidas
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 bg-white border border-[#E61D25] p-1 rounded-lg animate-in fade-in zoom-in duration-200 shadow-lg">
+                <span className="text-[10px] font-black uppercase px-2 text-[#E61D25]">¿Seguro?</span>
+                <button
+                  disabled={isPending}
+                  onClick={handleClearAll}
+                  className="bg-[#E61D25] text-white px-3 py-1.5 rounded-md text-[10px] font-black uppercase hover:bg-[#c4191f] transition-colors disabled:opacity-50"
+                >
+                  {isPending ? '...' : 'SÍ, BORRAR'}
+                </button>
+                <button
+                  disabled={isPending}
+                  onClick={() => setShowConfirm(false)}
+                  className="bg-[#474A4A]/10 text-[#474A4A] px-3 py-1.5 rounded-md text-[10px] font-black uppercase hover:bg-[#474A4A]/20 transition-colors"
+                >
+                  NO
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
