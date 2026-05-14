@@ -96,17 +96,18 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       
       let num = match[2];
       const candidate = (prefix + num).replace(/\s/g, '');
+      // Versión con cero adelante si el número tiene 1 dígito (BEL8 -> BEL08)
+      const candidatePadded = num.length === 1 ? prefix + '0' + num : '';
       
-      if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
-      
-      // Probar variaciones comunes adicionales
-      const variations = [
+      const toTry = [
+        candidate,
+        candidatePadded,
         candidate.replace('P0R', 'POR').replace('PQR', 'POR').replace('F0R', 'POR'),
         candidate.replace('8EL', 'BEL').replace('BE1', 'BEL'),
-        candidate.replace('AR6', 'ARG')
-      ];
+        candidate.replace('AR6', 'ARG'),
+      ].filter(Boolean);
       
-      for (const v of variations) {
+      for (const v of toTry) {
         if (normalizedMap.current[v]) return normalizedMap.current[v];
       }
     }

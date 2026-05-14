@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
+    console.log('[OCR Route] Result:', JSON.stringify(data).slice(0, 500));
     return NextResponse.json(data);
   } catch (error) {
     console.error('[OCR API Route Error]', error);
