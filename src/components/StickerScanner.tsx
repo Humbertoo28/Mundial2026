@@ -138,8 +138,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
       // Intentamos con diferentes configuraciones de mayor a menor compatibilidad
       const attempts = [
+        { video: { facingMode: 'environment' } }, // Primero lo más básico para asegurar compatibilidad
         { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-        { video: { facingMode: 'environment' } },
         { video: true }
       ];
 
@@ -172,21 +172,26 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           videoRef.current.load();
           
           await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar cámara.')), 8000);
+            const timeout = setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar cámara.')), 10000);
             
             if (!videoRef.current) return;
 
-            videoRef.current.onloadedmetadata = async () => {
+            const handlePlay = async () => {
               clearTimeout(timeout);
               try {
-                await videoRef.current!.play();
-                console.log('[Scanner] Video reproduciéndose');
-                setIsCameraActive(true);
-                resolve();
+                if (videoRef.current) {
+                  await videoRef.current.play();
+                  console.log('[Scanner] Video reproduciéndose');
+                  setIsCameraActive(true);
+                  resolve();
+                }
               } catch (playErr) {
                 reject(playErr);
               }
             };
+
+            videoRef.current.onloadedmetadata = handlePlay;
+            videoRef.current.oncanplay = handlePlay;
             
             videoRef.current.onerror = (e) => {
               clearTimeout(timeout);
@@ -437,7 +442,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 playsInline 
                 autoPlay 
                 muted 
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isCameraActive ? 'opacity-100' : 'opacity-0'}`} 
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ opacity: isCameraActive ? 1 : 0.01 }}
               />
               
               {!isCameraActive && !error && (
@@ -446,9 +452,15 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                     <Loader2 className="h-12 w-12 text-[#2A398D] animate-spin" />
                     <Camera className="absolute inset-0 m-auto h-5 w-5 text-white/50" />
                   </div>
-                  <div className="text-center">
+                  <div className="text-center px-6">
                     <p className="text-white text-sm font-bold uppercase tracking-widest mb-1">Iniciando Cámara</p>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest">Acepta los permisos si aparecen</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-4">Acepta los permisos si aparecen</p>
+                    <button 
+                      onClick={startCamera}
+                      className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/10 transition-all"
+                    >
+                      ¿No inicia? Toca aquí para reintentar
+                    </button>
                   </div>
                 </div>
               )}
