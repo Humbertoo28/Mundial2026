@@ -129,8 +129,51 @@ export default function AlbumGrid({
     return acc;
   }, {} as Record<string, Sticker[]>);
 
-  // Sort sections with Panama first
-  const sortedSections = Object.keys(groupedStickers).sort(sortSectionsWithPanamaFirst);
+  // Sort sections according to official Group order
+  const sortedSections = Object.keys(groupedStickers).sort((a, b) => {
+    // Si estamos en la vista de todos, mantener a Panamá de primero como excepción especial
+    if (selectedGroup === 'TODOS') {
+      if (a.toUpperCase() === 'PANAMA') return -1;
+      if (b.toUpperCase() === 'PANAMA') return 1;
+    }
+
+    const getGroupInfo = (sectionName: string) => {
+      const firstSticker = groupedStickers[sectionName][0];
+      if (!firstSticker) return { groupIndex: 999, teamIndex: 999 };
+      
+      const id = firstSticker.id;
+      let prefix = id.substring(0, 3).toUpperCase();
+      if (prefix === 'JAP') prefix = 'JPN'; // Normalización
+      
+      const group = getGroupForSticker(id);
+      if (!group) {
+        // Ordenar secciones especiales al principio
+        if (id === '00') return { groupIndex: -3, teamIndex: 0 };
+        if (id.startsWith('FWC')) return { groupIndex: -2, teamIndex: 0 };
+        if (id.startsWith('CC')) return { groupIndex: 998, teamIndex: 0 };
+        return { groupIndex: 999, teamIndex: 999 };
+      }
+      
+      const groupKeys = Object.keys(GROUPS);
+      const groupIndex = groupKeys.indexOf(group);
+      const teamIndex = GROUPS[group as GroupCode].indexOf(prefix);
+      
+      return { groupIndex, teamIndex };
+    };
+
+    const infoA = getGroupInfo(a);
+    const infoB = getGroupInfo(b);
+
+    if (infoA.groupIndex !== infoB.groupIndex) {
+      return infoA.groupIndex - infoB.groupIndex;
+    }
+    
+    if (infoA.teamIndex !== infoB.teamIndex) {
+      return infoA.teamIndex - infoB.teamIndex;
+    }
+
+    return a.localeCompare(b);
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
