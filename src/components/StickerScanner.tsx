@@ -281,15 +281,11 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.85)
       );
 
-      // 2. Enviar a la API
+      // 2. Enviar a la API interna (para evitar bloqueos de CORS en iPhone)
       const formData = new FormData();
       formData.append('file', compressedBlob, 'photo.jpg');
-      formData.append('apikey', 'K81165445888957'); 
-      formData.append('language', 'eng');
-      formData.append('scale', 'true');
-      formData.append('OCREngine', '2'); // Motor más rápido
 
-      const response = await fetch('https://api.ocr.space/parse/image', {
+      const response = await fetch('/api/ocr', {
         method: 'POST',
         body: formData
       });
