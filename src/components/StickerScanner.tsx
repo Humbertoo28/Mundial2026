@@ -257,11 +257,16 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       canvasComp.width = width;
       canvasComp.height = height;
       const ctxComp = canvasComp.getContext('2d');
-      ctxComp?.drawImage(img, 0, 0, width, height);
+      if (ctxComp) {
+        // Filtros de "Visión Nocturna" para resaltar letras negras sobre fondo claro
+        ctxComp.filter = 'grayscale(1) contrast(1.5) brightness(1.1)';
+        ctxComp.drawImage(img, 0, 0, width, height);
+        ctxComp.filter = 'none';
+      }
 
-      // Convertir a Blob comprimido (JPEG 0.7 es perfecto para OCR)
+      // Convertir a Blob comprimido (JPEG 0.8 para no perder nitidez en los bordes de las letras)
       const compressedBlob = await new Promise<Blob>((resolve) => 
-        canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.7)
+        canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.8)
       );
 
       // 2. Enviar a la API
