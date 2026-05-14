@@ -231,26 +231,46 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validar tamaño (máx 4MB para la API gratuita)
-    if (file.size > 4 * 1024 * 1024) {
-      setError('La foto es muy pesada. Intenta tomarla de nuevo con menos resolución.');
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    setPhotoPreview(url);
     setIsScanning(true);
     setError(null);
 
+    // Crear preview local
+    const url = URL.createObjectURL(file);
+    setPhotoPreview(url);
+
     try {
-      // Usamos FormData para enviar la imagen a la API de OCR.space
+      // 1. Redimensionar imagen para que sea ligera y la API no falle
+      const img = new Image();
+      img.src = url;
+      await new Promise((resolve) => (img.onload = resolve));
+
+      const canvasComp = document.createElement('canvas');
+      const MAX_WIDTH = 1200; // Suficiente para OCR pero ligero
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = (MAX_WIDTH / width) * height;
+        width = MAX_WIDTH;
+      }
+
+      canvasComp.width = width;
+      canvasComp.height = height;
+      const ctxComp = canvasComp.getContext('2d');
+      ctxComp?.drawImage(img, 0, 0, width, height);
+
+      // Convertir a Blob comprimido (JPEG 0.7 es perfecto para OCR)
+      const compressedBlob = await new Promise<Blob>((resolve) => 
+        canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.7)
+      );
+
+      // 2. Enviar a la API
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('apikey', 'K81165445888957'); // API Key Gratuita de Respaldo
+      formData.append('file', compressedBlob, 'photo.jpg');
+      formData.append('apikey', 'K81165445888957'); 
       formData.append('language', 'eng');
-      formData.append('isOverlayRequired', 'false');
       formData.append('scale', 'true');
-      formData.append('detectOrientation', 'true');
+      formData.append('OCREngine', '2'); // Motor más rápido
 
       const response = await fetch('https://api.ocr.space/parse/image', {
         method: 'POST',
@@ -260,23 +280,21 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       const result = await response.json();
 
       if (result.OCRExitCode === 1) {
-        const text = result.ParsedResults[0].ParsedText;
-        console.log('[Cloud OCR] Text found:', text);
-        
+        const text = result.ParsedResults[0]?.ParsedText || '';
         const found = matchText(text);
         if (found) {
           setDetectedId(found);
           onDetected(found);
           setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
         } else {
-          setError('No se detectó el código (ej: POR 14). Asegúrate que se vea claro.');
+          setError('No se detectó el código. Asegúrate que el código (ej: POR 14) esté centrado y nítido.');
         }
       } else {
-        setError('El servidor de IA está ocupado. Intenta de nuevo en unos segundos.');
+        setError('El servidor de IA está saturado. Reintenta en 5 segundos.');
       }
     } catch (err) { 
       console.error('[Cloud OCR] Error:', err);
-      setError('Error de conexión. Revisa tu internet.'); 
+      setError('Error de conexión. Intenta tomar la foto con más luz.'); 
     }
     setIsScanning(false);
   };
