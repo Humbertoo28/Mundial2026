@@ -24,6 +24,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const [detectedId, setDetectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [initMessage, setInitMessage] = useState('Iniciando cámara...');
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Pre-normalize valid IDs for easier matching
   const normalizedValidIds = useRef<Record<string, string>>({});
@@ -36,28 +37,34 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   }, [validIds]);
 
   const initWorker = async () => {
+    if (workerRef.current && isWorkerReady) return true;
+    
     try {
-      if (!workerRef.current) {
-        console.log("Initializing Tesseract worker...");
-        // Use a faster configuration for numbers/uppercase AND tessdata_fast
-        const worker = await createWorker('eng', 1, {
-          logger: m => console.log(m.status, m.progress),
-          workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.0/dist/worker.min.js',
-          corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.0/tesseract-core.wasm.js',
-          langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
-        });
-        
-        await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
-        });
-        
-        workerRef.current = worker;
-      }
+      console.log("Initializing Tesseract worker...");
+      setLoadingProgress(0);
+      
+      const worker = await createWorker('eng', 1, {
+        logger: m => {
+          console.log(m.status, m.progress);
+          if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
+            setLoadingProgress(Math.round(m.progress * 100));
+          }
+        },
+        // Use default worker/core paths but specify fast data
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
+      });
+      
+      await worker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
+        tessedit_pageseg_mode: '1' as any, // Single line/word mode is faster
+      });
+      
+      workerRef.current = worker;
       setIsWorkerReady(true);
       return true;
     } catch (err) {
       console.error("Error initializing Tesseract:", err);
-      // We don't block the camera if worker fails, but we show an error
+      // Don't block if already failed once, just show a message
       return false;
     }
   };
@@ -66,7 +73,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setIsInitializing(true);
     setError(null);
     try {
-      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment', 
@@ -86,7 +92,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
             })
             .catch(e => {
               console.error("Play prevented", e);
-              setError("Error al reproducir el video. Toca el botón para reintentar.");
+              setError("Error al reproducir el video.");
             });
         };
       }
@@ -96,7 +102,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       
     } catch (err) {
       console.error("Error accessing camera:", err);
-      setError("No se pudo acceder a la cámara. Por favor, asegúrate de dar los permisos necesarios.");
+      setError("Permiso de cámara denegado o no disponible.");
       setIsInitializing(false);
     }
   };
@@ -139,8 +145,9 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     const context = canvas.getContext('2d', { willReadFrequently: true });
     if (!context) return;
 
+    // We scan a wider but shorter area for the ID at the top/bottom
     const targetWidth = 400;
-    const targetHeight = 200;
+    const targetHeight = 150;
     const startX = (video.videoWidth - targetWidth) / 2;
     const startY = (video.videoHeight - targetHeight) / 2;
 
@@ -152,21 +159,23 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
     try {
       const { data: { text } } = await workerRef.current.recognize(canvas);
-
-      const words = text.split(/\s+/);
+      const cleanedText = text.replace(/[^A-Z0-9\s]/gi, '').toUpperCase();
+      const words = cleanedText.split(/\s+/);
+      
       let foundId: string | null = null;
 
+      // Check single words
       for (const word of words) {
-        const normalized = word.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        if (normalizedValidIds.current[normalized]) {
-          foundId = normalizedValidIds.current[normalized];
+        if (normalizedValidIds.current[word]) {
+          foundId = normalizedValidIds.current[word];
           break;
         }
       }
 
+      // Check combined words
       if (!foundId) {
         for (let i = 0; i < words.length - 1; i++) {
-          const combined = (words[i] + words[i+1]).replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          const combined = words[i] + words[i+1];
           if (normalizedValidIds.current[combined]) {
             foundId = normalizedValidIds.current[combined];
             break;
@@ -181,7 +190,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         setTimeout(() => {
           setStatus('idle');
           setDetectedId(null);
-        }, 2000);
+        }, 3000);
       } else {
         setStatus('idle');
       }
@@ -193,18 +202,15 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
-    
     const runScan = async () => {
       if (isCameraReady && isWorkerReady && status === 'idle') {
         await processFrame();
       }
-      timeout = setTimeout(runScan, 800);
+      timeout = setTimeout(runScan, 1000);
     };
-
     if (isCameraReady && isWorkerReady && status === 'idle') {
-      timeout = setTimeout(runScan, 800);
+      timeout = setTimeout(runScan, 1000);
     }
-    
     return () => clearTimeout(timeout);
   }, [isCameraReady, isWorkerReady, status, processFrame]);
 
@@ -221,12 +227,9 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         <div className="p-4 flex justify-between items-center border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-[#2A398D]" />
-            <h2 className="font-bold text-white">Escáner de Figuritas</h2>
+            <h2 className="font-bold text-white text-sm">Escáner de Figuritas</h2>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/60">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -234,20 +237,16 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         <div className="relative flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
           {isInitializing && (
             <div className="flex flex-col items-center gap-4 p-6 text-center z-10">
-              <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin mx-auto" />
-              <p className="text-white/80 font-medium">{initMessage}</p>
+              <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />
+              <p className="text-white/80 font-medium text-sm">{initMessage}</p>
             </div>
           )}
           
           {error && (
             <div className="p-8 text-center z-10 absolute inset-0 bg-black flex flex-col items-center justify-center">
-              <AlertCircle className="h-12 w-12 text-[#E61D25] mx-auto mb-4" />
-              <p className="text-white mb-6">{error}</p>
-              <button 
-                onClick={startCamera}
-                className="flex items-center gap-2 mx-auto bg-[#2A398D] text-white px-6 py-2 rounded-xl font-bold"
-              >
-                <RefreshCw className="h-4 w-4" />
+              <AlertCircle className="h-12 w-12 text-[#E61D25] mb-4" />
+              <p className="text-white text-sm mb-6">{error}</p>
+              <button onClick={startCamera} className="bg-[#2A398D] text-white px-6 py-2 rounded-xl font-bold text-sm">
                 Reintentar
               </button>
             </div>
@@ -263,9 +262,21 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           
           {isCameraReady && !isWorkerReady && !error && (
             <div className="absolute top-4 left-4 right-4 z-30">
-              <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-[#2A398D]/30 flex items-center gap-3">
-                <Loader2 className="h-4 w-4 text-[#2A398D] animate-spin" />
-                <span className="text-white text-xs font-medium italic">Preparando Inteligencia Artificial...</span>
+              <div className="bg-black/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-[#2A398D]/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 text-[#2A398D] animate-spin" />
+                    <span className="text-white text-xs font-bold uppercase tracking-wider">Iniciando IA...</span>
+                  </div>
+                  <span className="text-[#2A398D] text-xs font-black">{loadingProgress}%</span>
+                </div>
+                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${loadingProgress}%` }}
+                    className="h-full bg-[#2A398D] shadow-[0_0_10px_#2A398D]"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -277,7 +288,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#2A398D] rounded-tr-lg" />
                 <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#2A398D] rounded-bl-lg" />
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#2A398D] rounded-br-lg" />
-                
                 <motion.div 
                   animate={{ top: ['0%', '100%', '0%'] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -298,8 +308,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                     exit={{ opacity: 0, y: -10 }}
                     className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 border border-white/10"
                   >
-                    <Loader2 className="h-4 w-4 text-[#2A398D] animate-spin" />
-                    <span className="text-white text-xs font-bold uppercase tracking-widest">Escaneando...</span>
+                    <Loader2 className="h-3 w-3 text-[#2A398D] animate-spin" />
+                    <span className="text-white text-[10px] font-bold uppercase tracking-widest">Buscando número...</span>
                   </motion.div>
                 )}
                 {status === 'success' && (
@@ -311,7 +321,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                     className="bg-[#3CAC3B] px-6 py-2 rounded-full flex items-center gap-2 shadow-lg"
                   >
                     <CheckCircle2 className="h-5 w-5 text-white" />
-                    <span className="text-white font-black uppercase italic tracking-tighter">
+                    <span className="text-white font-black uppercase italic tracking-tighter text-lg">
                       {detectedId}
                     </span>
                   </motion.div>
@@ -321,20 +331,19 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           )}
         </div>
 
-        <div className="p-6 bg-[#1A1A1A] shrink-0">
-          <h3 className="text-white font-bold mb-2">Instrucciones:</h3>
-          <ul className="text-white/60 text-sm space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="bg-[#2A398D] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-              Apunta al número de la figurita (ej. ARG 1).
+        <div className="p-6 bg-[#1A1A1A] shrink-0 border-t border-white/5">
+          <h3 className="text-white font-bold text-xs mb-3 uppercase tracking-widest opacity-60">Instrucciones:</h3>
+          <ul className="text-white/80 text-xs space-y-2.5">
+            <li className="flex items-center gap-3">
+              <span className="bg-[#2A398D] text-white w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 font-bold">1</span>
+              Enfoca el número arriba a la derecha (ej. FWC 22).
             </li>
-            <li className="flex items-start gap-2">
-              <span className="bg-[#2A398D] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-              Mantén el celular quieto y asegúrate de tener buena luz.
+            <li className="flex items-center gap-3">
+              <span className="bg-[#2A398D] text-white w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 font-bold">2</span>
+              Mantén el pulso firme y con buena luz.
             </li>
           </ul>
         </div>
-
         <canvas ref={canvasRef} className="hidden" />
       </motion.div>
     </div>
