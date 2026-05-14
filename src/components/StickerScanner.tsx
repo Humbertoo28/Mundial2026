@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, X, Loader2, CheckCircle2, AlertCircle, RefreshCw, Search, Type } from 'lucide-react';
+import { Camera, X, Loader2, CheckCircle2, AlertCircle, RefreshCw, Search, Type, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Extend Window type for TextDetector (experimental API)
 declare global {
   interface Window {
     TextDetector: new () => {
-      detect(image: HTMLVideoElement | HTMLCanvasElement): Promise<Array<{ rawValue: string }>>;
+      detect(image: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement): Promise<Array<{ rawValue: string }>>;
     };
   }
 }
@@ -24,14 +24,22 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const videoRef = useRef<HTMLVideoElement>(null);
   const detectorRef = useRef<InstanceType<typeof window.TextDetector> | null>(null);
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mode, setMode] = useState<'checking' | 'camera' | 'manual' | 'unsupported'>('checking');
+  const [mode, setMode] = useState<'checking' | 'camera' | 'photo' | 'manual'>('checking');
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success'>('idle');
   const [detectedId, setDetectedId] = useState<string | null>(null);
+  
+  // Manual mode state
   const [manualInput, setManualInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  
+  // Photo mode state (iOS Fallback)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrMessage, setOcrMessage] = useState('');
 
   // Pre-normalize valid IDs
   const normalizedMap = useRef<Record<string, string>>({});
@@ -50,11 +58,10 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         detectorRef.current = new window.TextDetector();
         setMode('camera');
       } catch {
-        setMode('manual');
+        setMode('photo'); // iOS/Safari fallback
       }
     } else {
-      // TextDetector not supported — go straight to manual
-      setMode('manual');
+      setMode('photo'); // iOS/Safari fallback
     }
   }, []);
 
@@ -62,14 +69,14 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setDetectedId(rawId);
     setStatus('success');
     onDetected(rawId);
-    // Auto-reset after 2s so user can scan another
     setTimeout(() => {
       setStatus('idle');
       setDetectedId(null);
+      setPhotoPreview(null);
     }, 2500);
   }, [onDetected]);
 
-  // --- Camera mode ---
+  // --- ANDROID NATIVE CAMERA MODE ---
   const startCamera = async () => {
     setError(null);
     try {
@@ -96,14 +103,12 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setIsCameraReady(false);
   }, []);
 
-  // Start/stop camera when scanner opens/closes
   useEffect(() => {
     if (!isOpen) { stopCamera(); return; }
     if (mode === 'camera') startCamera();
     return () => stopCamera();
   }, [isOpen, mode, stopCamera]);
 
-  // Scanning loop using native TextDetector
   const processFrame = useCallback(async () => {
     if (!isCameraReady || !videoRef.current || !detectorRef.current || status !== 'idle') return;
     const video = videoRef.current;
@@ -115,7 +120,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       let foundId: string | null = null;
 
       for (const result of results) {
-        // Each result can have multiple lines; try words and combinations
         const words = result.rawValue.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/);
         for (const word of words) {
           if (normalizedMap.current[word]) { foundId = normalizedMap.current[word]; break; }
@@ -145,7 +149,72 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     return () => { if (scanIntervalRef.current) clearInterval(scanIntervalRef.current); };
   }, [isCameraReady, mode, processFrame]);
 
-  // --- Manual mode ---
+  // --- iOS PHOTO FALLBACK MODE ---
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show preview
+    const imageUrl = URL.createObjectURL(file);
+    setPhotoPreview(imageUrl);
+    setStatus('scanning');
+    setOcrProgress(0);
+    setOcrMessage('Iniciando IA...');
+    setError(null);
+
+    try {
+      // Lazy load tesseract only when needed so Android users don't download it
+      const { createWorker } = await import('tesseract.js');
+      
+      const worker = await createWorker('eng', 1, {
+        logger: m => {
+          if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
+            setOcrMessage('Descargando IA...');
+            setOcrProgress(Math.round(m.progress * 50)); // First 50%
+          } else if (m.status === 'recognizing text') {
+            setOcrMessage('Analizando foto...');
+            setOcrProgress(50 + Math.round(m.progress * 50)); // Last 50%
+          }
+        },
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
+      });
+
+      await worker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
+        tessedit_pageseg_mode: '1' as any,
+      });
+
+      const { data: { text } } = await worker.recognize(imageUrl);
+      await worker.terminate();
+
+      const words = text.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/);
+      let foundId: string | null = null;
+
+      for (const word of words) {
+        if (normalizedMap.current[word]) { foundId = normalizedMap.current[word]; break; }
+      }
+      if (!foundId) {
+        for (let i = 0; i < words.length - 1; i++) {
+          const combined = words[i] + words[i + 1];
+          if (normalizedMap.current[combined]) { foundId = normalizedMap.current[combined]; break; }
+        }
+      }
+
+      if (foundId) {
+        handleDetect(foundId);
+      } else {
+        setError('No se pudo detectar el número de la figurita en la foto.');
+        setStatus('idle');
+      }
+
+    } catch (err) {
+      console.error("OCR Photo Error:", err);
+      setError('Ocurrió un error al procesar la imagen.');
+      setStatus('idle');
+    }
+  };
+
+  // --- MANUAL MODE ---
   useEffect(() => {
     if (!manualInput.trim()) { setSuggestions([]); return; }
     const q = manualInput.replace(/\s/g, '').toUpperCase();
@@ -172,7 +241,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
             <h2 className="font-bold text-white text-sm">Escáner de Figuritas</h2>
           </div>
           <div className="flex items-center gap-2">
-            {mode === 'camera' && (
+            {(mode === 'camera' || mode === 'photo') && (
               <button
                 onClick={() => { stopCamera(); setMode('manual'); setManualInput(''); }}
                 className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-1.5"
@@ -180,9 +249,14 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 <Type className="h-3 w-3" /> Manual
               </button>
             )}
-            {mode === 'manual' && 'TextDetector' in (typeof window !== 'undefined' ? window : {}) && (
+            {mode === 'manual' && (
               <button
-                onClick={() => { setMode('camera'); setManualInput(''); setSuggestions([]); }}
+                onClick={() => {
+                  setManualInput(''); 
+                  setSuggestions([]);
+                  if ('TextDetector' in window) setMode('camera');
+                  else setMode('photo');
+                }}
                 className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-1.5"
               >
                 <Camera className="h-3 w-3" /> Cámara
@@ -194,14 +268,13 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           </div>
         </div>
 
-        {/* Body */}
         {mode === 'checking' && (
           <div className="flex-1 min-h-[200px] flex items-center justify-center">
             <Loader2 className="h-8 w-8 text-[#2A398D] animate-spin" />
           </div>
         )}
 
-        {/* ---- CAMERA MODE ---- */}
+        {/* ---- ANDROID CAMERA MODE ---- */}
         {mode === 'camera' && (
           <div className="relative flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
             {error && (
@@ -227,7 +300,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isCameraReady ? 'opacity-100' : 'opacity-0'}`}
             />
 
-            {/* Scan Frame */}
             {isCameraReady && !error && (
               <>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -244,7 +316,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                   </div>
                 </div>
 
-                {/* Status pill */}
                 <div className="absolute bottom-4 left-4 right-4 flex justify-center z-20">
                   <AnimatePresence mode="wait">
                     {status === 'scanning' && (
@@ -264,6 +335,101 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                   </AnimatePresence>
                 </div>
               </>
+            )}
+          </div>
+        )}
+
+        {/* ---- iOS PHOTO FALLBACK MODE ---- */}
+        {mode === 'photo' && (
+          <div className="flex-1 flex flex-col p-6 min-h-[300px] relative items-center justify-center bg-[#1A1A1A]">
+            
+            {!photoPreview ? (
+              <div className="text-center w-full">
+                <div className="w-20 h-20 bg-[#2A398D]/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#2A398D]/30">
+                  <ImageIcon className="h-8 w-8 text-[#2A398D]" />
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">Escanear Foto</h3>
+                <p className="text-white/60 text-sm mb-8 px-4">
+                  En iPhone, toma una foto de la figurita (o súbela de tu galería) y nosotros extraeremos el número.
+                </p>
+                
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  id="cameraInput"
+                  className="hidden"
+                  onChange={handlePhotoCapture}
+                />
+                <label 
+                  htmlFor="cameraInput"
+                  className="w-full flex items-center justify-center gap-3 bg-[#2A398D] text-white py-4 rounded-xl font-bold uppercase tracking-wider text-sm shadow-lg hover:bg-[#3CAC3B] transition-colors cursor-pointer active:scale-95"
+                >
+                  <Camera className="h-5 w-5" /> Abrir Cámara
+                </label>
+
+                <p className="text-white/40 text-[10px] mt-6">
+                  💡 Tip: También puedes usar el modo Manual y aprovechar la herramienta "Escanear Texto" del teclado de tu iPhone.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center relative">
+                <div className="relative w-full aspect-[3/4] max-h-[300px] rounded-xl overflow-hidden mb-6 border border-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoPreview} alt="Captura" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                  
+                  {/* Progress overlay */}
+                  {status === 'scanning' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                      <div className="bg-black/80 backdrop-blur-md p-6 rounded-2xl border border-[#2A398D]/50 w-full text-center">
+                        <Loader2 className="h-8 w-8 text-[#2A398D] animate-spin mx-auto mb-4" />
+                        <p className="text-white font-bold text-sm uppercase tracking-wider mb-2">{ocrMessage}</p>
+                        <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${ocrProgress}%` }}
+                            className="h-full bg-[#2A398D]"
+                          />
+                        </div>
+                        <p className="text-[#2A398D] text-xs font-black mt-2">{ocrProgress}%</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {status === 'success' && (
+                    <div className="absolute inset-0 flex items-center justify-center p-6">
+                      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#3CAC3B] px-8 py-4 rounded-full flex flex-col items-center gap-2 shadow-2xl">
+                        <CheckCircle2 className="h-8 w-8 text-white" />
+                        <span className="text-white font-black uppercase italic text-2xl">{detectedId}</span>
+                      </motion.div>
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="bg-[#E61D25]/10 border border-[#E61D25]/30 p-4 rounded-xl text-center w-full mb-4">
+                    <p className="text-[#E61D25] text-sm font-bold">{error}</p>
+                  </div>
+                )}
+
+                {status === 'idle' && (
+                  <div className="flex gap-4 w-full">
+                    <button 
+                      onClick={() => setPhotoPreview(null)}
+                      className="flex-1 py-3 bg-white/5 text-white/80 rounded-xl font-bold uppercase text-xs tracking-wider border border-white/10"
+                    >
+                      Cancelar
+                    </button>
+                    <label 
+                      htmlFor="cameraInput"
+                      className="flex-1 py-3 bg-[#2A398D] text-white rounded-xl font-bold uppercase text-xs tracking-wider text-center shadow-lg"
+                    >
+                      Reintentar
+                    </label>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -289,7 +455,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
               />
             </div>
 
-            {/* Suggestions */}
             <div className="flex-1 overflow-y-auto space-y-1">
               {suggestions.length === 0 && manualInput.length > 0 && (
                 <p className="text-white/30 text-xs text-center py-8">No se encontraron resultados</p>
@@ -308,14 +473,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           </div>
         )}
 
-        {/* Footer hint */}
-        {mode === 'camera' && isCameraReady && (
-          <div className="p-4 bg-[#1A1A1A] shrink-0 border-t border-white/5">
-            <p className="text-white/40 text-xs text-center">
-              📌 Apunta el número de la figurita hacia el recuadro con buena iluminación
-            </p>
-          </div>
-        )}
       </motion.div>
     </div>
   );
