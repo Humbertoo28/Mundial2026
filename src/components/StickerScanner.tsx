@@ -199,12 +199,26 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       let found: string | null = null;
 
       if (useNative && nativeDetectorRef.current) {
-        const results = await nativeDetectorRef.current.detect(canvas); // Usamos el canvas procesado
+        // Modo nativo (Android Chrome con flag activo)
+        const results = await nativeDetectorRef.current.detect(canvas);
         for (const res of results) {
           found = matchText(res.rawValue);
           if (found) break;
         }
-      } 
+      } else {
+        // Fallback: enviar frame al servidor OCR (funciona en cualquier dispositivo)
+        const blob = await new Promise<Blob>((resolve) =>
+          canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.8)
+        );
+        const formData = new FormData();
+        formData.append('file', blob, 'frame.jpg');
+        const response = await fetch('/api/ocr', { method: 'POST', body: formData });
+        const result = await response.json();
+        if (result.OCRExitCode === 1) {
+          const text = result.ParsedResults?.[0]?.ParsedText || '';
+          found = matchText(text);
+        }
+      }
 
       if (found) {
         setDetectedId(found);
@@ -224,14 +238,12 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   useEffect(() => {
     if (!isCameraActive || mode !== 'camera') return;
-    // Si no es nativo, ni siquiera intentamos el loop porque no hay motor de IA en vivo.
-    if (!useNative) return;
-    
+    const interval = useNative ? 700 : 2500; // Nativo: rápido. Cloud: cada 2.5s para no saturar
     const loop = () => {
       scanFrame();
-      scanTimerRef.current = setTimeout(loop, 600);
+      scanTimerRef.current = setTimeout(loop, interval);
     };
-    scanTimerRef.current = setTimeout(loop, 500);
+    scanTimerRef.current = setTimeout(loop, 800);
     return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
   }, [isCameraActive, mode, scanFrame, useNative]);
 
@@ -335,7 +347,9 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
               </span>
             )}
             {!useNative && mode === 'camera' && (
-              <span className="bg-[#E61D25]/20 text-[#E61D25] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#E61D25]/30">No Soportado</span>
+              <span className="bg-yellow-500/20 text-yellow-400 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-yellow-500/30 flex items-center gap-1">
+                <Zap className="h-2 w-2" /> Cloud
+              </span>
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -360,19 +374,11 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 </div>
               )}
 
-              {isCameraActive && !useNative && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 text-center">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="bg-[#E61D25]/20 p-4 rounded-full">
-                      <Camera className="h-8 w-8 text-[#E61D25]" />
-                    </div>
-                    <p className="text-white text-sm font-bold leading-relaxed">
-                      El escaneo en vivo no está soportado en este dispositivo (iOS/Safari).<br/><br/>
-                      Toca el ícono de <span className="text-[#3CAC3B]">FOTO</span> arriba para escanear al instante.
-                    </p>
-                    <button onClick={() => setMode('photo')} className="mt-4 bg-[#3CAC3B] text-white px-6 py-2 rounded-full font-black uppercase text-xs">
-                      Ir a Modo Foto
-                    </button>
+              {isCameraActive && !useNative && isScanning && (
+                <div className="absolute top-3 left-3 right-3 z-30">
+                  <div className="bg-black/70 backdrop-blur-md px-3 py-2 rounded-xl border border-yellow-500/30 flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 text-yellow-400 animate-spin" />
+                    <span className="text-yellow-200 text-[10px] font-bold uppercase tracking-widest">Analizando...</span>
                   </div>
                 </div>
               )}
