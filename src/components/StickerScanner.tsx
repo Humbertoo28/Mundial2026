@@ -147,30 +147,42 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     isProcessingRef.current = true;
     setIsScanning(true);
 
+    // Mejoramos el procesamiento de la imagen para que sea más nítida
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) { isProcessingRef.current = false; return; }
+
+    // Área de recorte más inteligente (centro expandido)
+    const cropW = Math.min(600, video.videoWidth);
+    const cropH = Math.min(250, video.videoHeight);
+    canvas.width = cropW;
+    canvas.height = cropH;
+    
+    // Dibujar y aplicar filtros de imagen básicos para OCR
+    ctx.filter = 'contrast(1.4) brightness(1.1) grayscale(1)';
+    ctx.drawImage(
+      video,
+      (video.videoWidth - cropW) / 2, (video.videoHeight - cropH) / 2,
+      cropW, cropH,
+      0, 0, cropW, cropH
+    );
+    ctx.filter = 'none';
+
     try {
       let found: string | null = null;
 
       if (useNative && nativeDetectorRef.current) {
-        // NATIVE ANDROID/CHROME: Instant and no downloads
-        const results = await nativeDetectorRef.current.detect(video);
+        const results = await nativeDetectorRef.current.detect(canvas); // Usamos el canvas procesado
         for (const res of results) {
           found = matchText(res.rawValue);
           if (found) break;
         }
-      } else if (ocrReady) {
-        // TESSERACT FALLBACK: (iOS or old Android)
+      } 
+      
+      if (!found && ocrReady) {
         const worker = getWorker();
-        const canvas = canvasRef.current;
-        if (worker && canvas) {
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          if (ctx) {
-            const cropW = Math.min(400, video.videoWidth);
-            const cropH = Math.min(160, video.videoHeight);
-            canvas.width = cropW; canvas.height = cropH;
-            ctx.drawImage(video, (video.videoWidth - cropW) / 2, (video.videoHeight - cropH) / 2, cropW, cropH, 0, 0, cropW, cropH);
-            const { data: { text } } = await worker.recognize(canvas);
-            found = matchText(text);
-          }
+        if (worker) {
+          const { data: { text } } = await worker.recognize(canvas);
+          found = matchText(text);
         }
       }
 
