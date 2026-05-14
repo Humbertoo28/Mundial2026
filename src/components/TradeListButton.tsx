@@ -241,31 +241,46 @@ export default function TradeListButton({
 
           {/* Botón Borrar Repetidas */}
           <div className="relative">
-            {!showConfirm ? (
-              <button
-                onClick={() => setShowConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#E61D25]/10 text-[#E61D25] hover:bg-[#E61D25] hover:text-white transition-all border border-[#E61D25]/20 active:scale-95"
-              >
-                <Trash2 className="h-4 w-4" />
-                Borrar Repetidas
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 bg-white border border-[#E61D25] p-1 rounded-lg animate-in fade-in zoom-in duration-200 shadow-lg">
-                <span className="text-[10px] font-black uppercase px-2 text-[#E61D25]">¿Seguro?</span>
-                <button
-                  disabled={isPending}
-                  onClick={handleClearAll}
-                  className="bg-[#E61D25] text-white px-3 py-1.5 rounded-md text-[10px] font-black uppercase hover:bg-[#c4191f] transition-colors disabled:opacity-50"
-                >
-                  {isPending ? '...' : 'SÍ, BORRAR'}
-                </button>
-                <button
-                  disabled={isPending}
-                  onClick={() => setShowConfirm(false)}
-                  className="bg-[#474A4A]/10 text-[#474A4A] px-3 py-1.5 rounded-md text-[10px] font-black uppercase hover:bg-[#474A4A]/20 transition-colors"
-                >
-                  NO
-                </button>
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-[#E61D25]/10 text-[#E61D25] hover:bg-[#E61D25] hover:text-white transition-all border border-[#E61D25]/20 active:scale-95"
+            >
+              <Trash2 className="h-4 w-4" />
+              Borrar Repetidas
+            </button>
+
+            {/* Modal de Confirmación Grande */}
+            {showConfirm && (
+              <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-[#0D0D0D] w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl border border-[#E61D25]/20 text-center animate-in zoom-in duration-300">
+                  <div className="bg-[#E61D25]/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Trash2 className="h-10 w-10 text-[#E61D25]" />
+                  </div>
+                  <h3 className="text-2xl font-black text-[#2A398D] dark:text-white uppercase italic tracking-tighter mb-2">
+                    ¿Borrar Todo?
+                  </h3>
+                  <p className="text-sm text-[#474A4A]/60 dark:text-white/40 font-bold mb-8 uppercase tracking-widest leading-relaxed">
+                    Esta acción eliminará TODAS tus figuritas repetidas. Tu álbum no se verá afectado.
+                  </p>
+                  
+                  <div className="flex flex-col gap-3">
+                    <button
+                      disabled={isPending}
+                      onClick={handleClearAll}
+                      className="w-full bg-[#E61D25] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-[#E61D25]/20 hover:bg-[#c4191f] transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      {isPending ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                      {isPending ? 'Borrando...' : 'Sí, borrar repetidas'}
+                    </button>
+                    <button
+                      disabled={isPending}
+                      onClick={() => setShowConfirm(false)}
+                      className="w-full bg-[#474A4A]/10 text-[#474A4A] dark:text-white/60 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-[#474A4A]/20 transition-all"
+                    >
+                      No, cancelar
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
