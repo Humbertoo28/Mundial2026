@@ -241,43 +241,57 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
   }, [isCameraActive, mode, scanFrame, useNative]);
 
-  // ---- PHOTO ----
+  // ---- PHOTO (Using Fast Cloud OCR to avoid downloads) ----
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validar tamaño (máx 4MB para la API gratuita)
+    if (file.size > 4 * 1024 * 1024) {
+      setError('La foto es muy pesada. Intenta tomarla de nuevo con menos resolución.');
+      return;
+    }
+
     const url = URL.createObjectURL(file);
     setPhotoPreview(url);
     setIsScanning(true);
     setError(null);
 
     try {
-      if (!ocrReady) {
-        await preloadOcrEngine();
-        let checks = 0;
-        while (!getOcrStatus().isReady && checks < 10) {
-          await new Promise(r => setTimeout(r, 500));
-          checks++;
+      // Usamos FormData para enviar la imagen a la API de OCR.space
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('apikey', 'K81165445888957'); // API Key Gratuita de Respaldo
+      formData.append('language', 'eng');
+      formData.append('isOverlayRequired', 'false');
+      formData.append('scale', 'true');
+      formData.append('detectOrientation', 'true');
+
+      const response = await fetch('https://api.ocr.space/parse/image', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.OCRExitCode === 1) {
+        const text = result.ParsedResults[0].ParsedText;
+        console.log('[Cloud OCR] Text found:', text);
+        
+        const found = matchText(text);
+        if (found) {
+          setDetectedId(found);
+          onDetected(found);
+          setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
+        } else {
+          setError('No se detectó el código (ej: POR 14). Asegúrate que se vea claro.');
         }
-      }
-
-      const worker = getWorker();
-      if (!worker) { 
-        setError('La IA aún se está descargando. Espera un momento.'); 
-        setIsScanning(false); 
-        return; 
-      }
-
-      const { data: { text } } = await worker.recognize(url);
-      const found = matchText(text);
-      if (found) {
-        setDetectedId(found);
-        onDetected(found);
-        setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
       } else {
-        setError('No se detectó el código (ej: POR 14). Intenta con mejor luz.');
+        setError('El servidor de IA está ocupado. Intenta de nuevo en unos segundos.');
       }
     } catch (err) { 
-      setError('Error al procesar la imagen.'); 
+      console.error('[Cloud OCR] Error:', err);
+      setError('Error de conexión. Revisa tu internet.'); 
     }
     setIsScanning(false);
   };
