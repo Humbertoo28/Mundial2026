@@ -39,11 +39,12 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     try {
       if (!workerRef.current) {
         console.log("Initializing Tesseract worker...");
-        // Use a faster configuration for numbers/uppercase
+        // Use a faster configuration for numbers/uppercase AND tessdata_fast
         const worker = await createWorker('eng', 1, {
           logger: m => console.log(m.status, m.progress),
           workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.0/dist/worker.min.js',
           corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.0/tesseract-core.wasm.js',
+          langPath: 'https://tessdata.projectnaptha.com/4.0.0_fast',
         });
         
         await worker.setParameters({

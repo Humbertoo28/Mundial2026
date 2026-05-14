@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Minus, Plus, Layers, Camera } from 'lucide-react';
+import { Search, Filter, Minus, Plus, Layers, Camera, X } from 'lucide-react';
 import { updateStickerQuantity } from '@/app/actions/stickers';
 import StickerScanner from './StickerScanner';
 import { getFlagUrl, getFlagEmoji, sortSectionsWithPanamaFirst, PREFIX_TO_FLAG } from '@/lib/flags';
@@ -64,10 +64,17 @@ export default function AlbumGrid({
   const [selectedGroup, setSelectedGroup] = useState<GroupCode | 'TODOS'>('TODOS');
   const [showOnlyRepeated, setShowOnlyRepeated] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedSticker, setScannedSticker] = useState<Sticker | null>(null);
 
   const handleStickerDetected = (id: string) => {
-    setSearchTerm(id);
-    setIsScannerOpen(false); // Cierra al detectar uno, para confirmar
+    setIsScannerOpen(false); // Cierra al detectar uno
+    // Buscar la figurita exacta ignorando espacios y mayúsculas
+    const sticker = stickers.find(s => s.id.replace(/\s/g, '').toUpperCase() === id.replace(/\s/g, '').toUpperCase());
+    if (sticker) {
+      setScannedSticker(sticker);
+    } else {
+      setSearchTerm(id); // fallback
+    }
   };
 
   const sections = [
@@ -428,6 +435,63 @@ export default function AlbumGrid({
         onDetected={handleStickerDetected}
         validIds={stickers.map(s => s.id)}
       />
+
+      {/* Modal de Figurita Escaneada */}
+      {scannedSticker && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-[#0D0D0D] border border-[#3CAC3B]/30 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative flex flex-col items-center text-center animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setScannedSticker(null)}
+              className="absolute top-4 right-4 p-2 bg-[#D1D4D1]/20 dark:bg-white/5 rounded-full text-[#474A4A] dark:text-white/60 hover:bg-[#E61D25] hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <div className="w-20 h-20 bg-[#3CAC3B]/10 rounded-full flex items-center justify-center mb-4 border-4 border-[#3CAC3B]/20">
+              <Camera className="h-8 w-8 text-[#3CAC3B]" />
+            </div>
+            
+            <h2 className="text-3xl font-black text-[#2A398D] dark:text-white uppercase tracking-wider mb-1">
+              ¡{scannedSticker.id}!
+            </h2>
+            <p className="text-[#474A4A]/80 dark:text-white/60 text-sm font-bold uppercase tracking-widest mb-6">
+              {scannedSticker.name}
+            </p>
+
+            <div className="bg-[#D1D4D1]/20 dark:bg-white/5 w-full rounded-2xl p-6 flex flex-col items-center gap-4 border border-[#474A4A]/10 dark:border-white/5">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#474A4A]/60 dark:text-white/50">¿Cuántas tienes?</span>
+              
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => updateQuantity(scannedSticker.id, -1)}
+                  disabled={(inventory[scannedSticker.id] || 0) === 0}
+                  className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white dark:bg-[#1A1A1A] border border-[#474A4A]/20 dark:border-white/10 text-[#474A4A] dark:text-white hover:bg-[#E61D25] hover:text-white hover:border-[#E61D25] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <Minus className="h-6 w-6" />
+                </button>
+                
+                <span className="text-5xl font-black text-[#2A398D] dark:text-[#3CAC3B] w-12 text-center">
+                  {inventory[scannedSticker.id] || 0}
+                </span>
+                
+                <button
+                  onClick={() => updateQuantity(scannedSticker.id, 1)}
+                  className="w-14 h-14 flex items-center justify-center rounded-2xl bg-[#2A398D] text-white hover:bg-[#3CAC3B] transition-all shadow-md active:scale-95"
+                >
+                  <Plus className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setScannedSticker(null)}
+              className="mt-6 w-full py-4 bg-[#3CAC3B] hover:bg-[#2A398D] text-white rounded-xl font-black uppercase tracking-widest text-sm transition-colors shadow-md flex items-center justify-center gap-2"
+            >
+              Confirmar y Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
