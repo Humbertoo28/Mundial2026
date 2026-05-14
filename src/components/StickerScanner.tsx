@@ -435,17 +435,22 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
         {/* Viewport */}
         <div className="relative flex-1 min-h-[350px] bg-black flex items-center justify-center overflow-hidden">
+          {/* ALWAYS render video to prevent null ref issues */}
+          <video 
+            ref={videoRef} 
+            playsInline 
+            autoPlay 
+            muted 
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ 
+              opacity: isCameraActive && mode === 'camera' ? 1 : 0.01,
+              display: mode === 'camera' ? 'block' : 'none',
+              pointerEvents: 'none'
+            }}
+          />
+
           {mode === 'camera' && (
             <>
-              <video 
-                ref={videoRef} 
-                playsInline 
-                autoPlay 
-                muted 
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ opacity: isCameraActive ? 1 : 0.01 }}
-              />
-              
               {!isCameraActive && !error && (
                 <div className="z-10 flex flex-col items-center gap-3">
                   <div className="relative">
@@ -454,12 +459,15 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                   </div>
                   <div className="text-center px-6">
                     <p className="text-white text-sm font-bold uppercase tracking-widest mb-1">Iniciando Cámara</p>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-4">Acepta los permisos si aparecen</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-4">Revisa si hay un aviso de permisos arriba o abajo</p>
                     <button 
-                      onClick={startCamera}
-                      className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/10 transition-all"
+                      onClick={() => {
+                        stopCamera();
+                        setTimeout(startCamera, 500);
+                      }}
+                      className="bg-[#2A398D] hover:bg-[#3CAC3B] text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-full shadow-lg transition-all active:scale-95"
                     >
-                      ¿No inicia? Toca aquí para reintentar
+                      TOCA AQUÍ PARA FORZAR INICIO
                     </button>
                   </div>
                 </div>
