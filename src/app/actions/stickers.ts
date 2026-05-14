@@ -298,14 +298,17 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   const results = await Promise.all(promises);
   if (results.some(r => r.error)) throw new Error("Error al ejecutar el intercambio sincrónico");
 
-  // Registrar log
+  // Registrar log (no bloqueante)
   if (traderName) {
-    supabase.from('trade_logs').insert({
-      user_id: userId,
-      trader_name: traderName,
-      given_ids: givenIds,
-      received_ids: receivedIds
-    }).catch(console.error);
+    void (async () => {
+      const { error } = await supabase.from('trade_logs').insert({
+        user_id: userId,
+        trader_name: traderName,
+        given_ids: givenIds,
+        received_ids: receivedIds
+      });
+      if (error) console.error('Error saving trade log:', error);
+    })();
   }
 
   revalidatePath('/');
