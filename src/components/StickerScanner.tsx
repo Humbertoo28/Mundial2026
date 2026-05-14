@@ -69,33 +69,41 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     
     // 2. Correcciones comunes de OCR (errores típicos de la IA)
     const normalizedText = cleanText
-      .replace(/P0R/g, 'POR')
-      .replace(/PQ R/g, 'POR')
-      .replace(/PQR/g, 'POR')
-      .replace(/F0R/g, 'POR')
-      .replace(/0/g, 'O') // Solo si está en la parte de letras (esto es arriesgado, mejor por partes)
-      .replace(/I/g, '1')
-      .replace(/L/g, '1');
+      .replace(/P0R/g, 'POR').replace(/PQR/g, 'POR').replace(/F0R/g, 'POR')
+      .replace(/8EL/g, 'BEL').replace(/BE1/g, 'BEL').replace(/B EL/g, 'BEL')
+      .replace(/6ER/g, 'GER').replace(/6E R/g, 'GER')
+      .replace(/E5P/g, 'ESP').replace(/ES P/g, 'ESP')
+      .replace(/AR6/g, 'ARG').replace(/AR 6/g, 'ARG')
+      .replace(/0/g, 'O') // Solo en prefijos
+      .replace(/1/g, 'I');
 
     console.log('[Scanner] Raw text cleaned:', cleanText);
 
     // 3. Intento de match directo con limpieza
     if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
+    
+    // Probar el texto normalizado también
+    if (normalizedMap.current[normalizedText]) return normalizedMap.current[normalizedText];
 
     // 4. Buscar patrones de 3 letras + números en el texto sucio
-    const pattern = /([A-Z]{3}|[A-Z0-9]{3})\s*(\d+)/g;
+    const pattern = /([A-Z0-9]{3})\s*(\d+)/g;
     let match;
     while ((match = pattern.exec(text.toUpperCase())) !== null) {
-      let prefix = match[1].replace(/0/g, 'O').replace(/1/g, 'I'); // Corregir letras
+      let prefix = match[1]
+        .replace(/0/g, 'O').replace(/1/g, 'I')
+        .replace('8EL', 'BEL').replace('BE1', 'BEL')
+        .replace('6ER', 'GER').replace('E5P', 'ESP');
+      
       let num = match[2];
       const candidate = (prefix + num).replace(/\s/g, '');
       
       if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
       
-      // Probar variaciones comunes
+      // Probar variaciones comunes adicionales
       const variations = [
         candidate.replace('P0R', 'POR').replace('PQR', 'POR').replace('F0R', 'POR'),
-        candidate.replace('ARG', 'ARG').replace('AR6', 'ARG')
+        candidate.replace('8EL', 'BEL').replace('BE1', 'BEL'),
+        candidate.replace('AR6', 'ARG')
       ];
       
       for (const v of variations) {
@@ -239,15 +247,18 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setPhotoPreview(url);
 
     try {
-      // 1. Redimensionar imagen para que sea ligera y la API no falle
+      // 1. Recorte Inteligente: Solo nos interesa la parte superior de la figurita (donde está el código)
       const img = new Image();
       img.src = url;
       await new Promise((resolve) => (img.onload = resolve));
 
       const canvasComp = document.createElement('canvas');
-      const MAX_WIDTH = 1200; // Suficiente para OCR pero ligero
+      
+      // Recortamos solo la parte superior (aprox el 30% de arriba)
+      const cropHeight = img.height * 0.35; 
+      const MAX_WIDTH = 1000;
       let width = img.width;
-      let height = img.height;
+      let height = cropHeight;
 
       if (width > MAX_WIDTH) {
         height = (MAX_WIDTH / width) * height;
@@ -258,15 +269,16 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       canvasComp.height = height;
       const ctxComp = canvasComp.getContext('2d');
       if (ctxComp) {
-        // Filtros de "Visión Nocturna" para resaltar letras negras sobre fondo claro
-        ctxComp.filter = 'grayscale(1) contrast(1.5) brightness(1.1)';
-        ctxComp.drawImage(img, 0, 0, width, height);
+        // Filtro de alto contraste para resaltar el texto negro
+        ctxComp.filter = 'grayscale(1) contrast(2) brightness(1.1)';
+        // Dibujamos solo la franja superior
+        ctxComp.drawImage(img, 0, 0, img.width, cropHeight, 0, 0, width, height);
         ctxComp.filter = 'none';
       }
 
-      // Convertir a Blob comprimido (JPEG 0.8 para no perder nitidez en los bordes de las letras)
+      // Convertir a Blob comprimido (Calidad alta para texto pequeño)
       const compressedBlob = await new Promise<Blob>((resolve) => 
-        canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.8)
+        canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.85)
       );
 
       // 2. Enviar a la API
