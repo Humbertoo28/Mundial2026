@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Search, Filter, Minus, Plus, Layers, Camera, X } from 'lucide-react';
 import { updateStickerQuantity } from '@/app/actions/stickers';
 import StickerScanner from './StickerScanner';
-import { preloadOcrEngine } from '@/lib/ocrEngine';
 import { getFlagUrl, getFlagEmoji, sortSectionsWithPanamaFirst, PREFIX_TO_FLAG } from '@/lib/flags';
 import { GROUPS, GroupCode, getGroupForSticker } from '@/lib/groups';
 
@@ -59,11 +58,6 @@ export default function AlbumGrid({
     });
     return acc;
   });
-
-  // Pre-cargar la IA de escaneo en segundo plano mientras el usuario navega
-  useEffect(() => {
-    preloadOcrEngine();
-  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('Todas');

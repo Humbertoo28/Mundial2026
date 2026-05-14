@@ -61,19 +61,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     }
   }, []);
 
-  // Poll OCR engine status (only if native is not available)
-  useEffect(() => {
-    if (!isOpen || useNative) return;
-    const check = () => {
-      const { isReady } = getOcrStatus();
-      setOcrReady(isReady);
-      if (!isReady) preloadOcrEngine().then(() => setOcrReady(true));
-    };
-    check();
-    const interval = setInterval(check, 1000);
-    return () => clearInterval(interval);
-  }, [isOpen, useNative]);
-
   const matchText = useCallback((text: string): string | null => {
     if (!text) return null;
     
@@ -177,6 +164,9 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setIsScanning(true);
 
     // Mejoramos el procesamiento de la imagen para que sea más nítida
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) { isProcessingRef.current = false; return; }
 
@@ -206,14 +196,6 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           if (found) break;
         }
       } 
-      
-      if (!found && ocrReady) {
-        const worker = getWorker();
-        if (worker) {
-          const { data: { text } } = await worker.recognize(canvas);
-          found = matchText(text);
-        }
-      }
 
       if (found) {
         setDetectedId(found);
@@ -229,13 +211,16 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
     setIsScanning(false);
     isProcessingRef.current = false;
-  }, [isCameraActive, ocrReady, detectedId, onDetected, useNative, matchText]);
+  }, [isCameraActive, detectedId, onDetected, useNative, matchText]);
 
   useEffect(() => {
     if (!isCameraActive || mode !== 'camera') return;
+    // Si no es nativo, ni siquiera intentamos el loop porque no hay motor de IA en vivo.
+    if (!useNative) return;
+    
     const loop = () => {
       scanFrame();
-      scanTimerRef.current = setTimeout(loop, useNative ? 600 : 1200);
+      scanTimerRef.current = setTimeout(loop, 600);
     };
     scanTimerRef.current = setTimeout(loop, 500);
     return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
@@ -320,8 +305,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 <Zap className="h-2 w-2" /> Nativo
               </span>
             )}
-            {!useNative && ocrReady && mode === 'camera' && (
-              <span className="bg-[#2A398D]/20 text-[#2A398D] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#2A398D]/30">IA Lista</span>
+            {!useNative && mode === 'camera' && (
+              <span className="bg-[#E61D25]/20 text-[#E61D25] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#E61D25]/30">No Soportado</span>
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -346,11 +331,19 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
                 </div>
               )}
 
-              {isCameraActive && !useNative && !ocrReady && (
-                <div className="absolute top-3 left-3 right-3 z-30">
-                  <div className="bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-yellow-500/30 flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 text-yellow-400 animate-spin" />
-                    <span className="text-yellow-200 text-[10px] font-bold uppercase tracking-widest">Cargando IA...</span>
+              {isCameraActive && !useNative && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="bg-[#E61D25]/20 p-4 rounded-full">
+                      <Camera className="h-8 w-8 text-[#E61D25]" />
+                    </div>
+                    <p className="text-white text-sm font-bold leading-relaxed">
+                      El escaneo en vivo no está soportado en este dispositivo (iOS/Safari).<br/><br/>
+                      Toca el ícono de <span className="text-[#3CAC3B]">FOTO</span> arriba para escanear al instante.
+                    </p>
+                    <button onClick={() => setMode('photo')} className="mt-4 bg-[#3CAC3B] text-white px-6 py-2 rounded-full font-black uppercase text-xs">
+                      Ir a Modo Foto
+                    </button>
                   </div>
                 </div>
               )}
