@@ -247,18 +247,16 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setPhotoPreview(url);
 
     try {
-      // 1. Recorte Inteligente: Solo nos interesa la parte superior de la figurita (donde está el código)
+      // 1. Redimensionar Imagen de forma inteligente (Sin Recortar)
       const img = new Image();
       img.src = url;
       await new Promise((resolve) => (img.onload = resolve));
 
       const canvasComp = document.createElement('canvas');
       
-      // Recortamos solo la parte superior (aprox el 30% de arriba)
-      const cropHeight = img.height * 0.35; 
-      const MAX_WIDTH = 1000;
+      const MAX_WIDTH = 1200;
       let width = img.width;
-      let height = cropHeight;
+      let height = img.height;
 
       if (width > MAX_WIDTH) {
         height = (MAX_WIDTH / width) * height;
@@ -269,14 +267,13 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       canvasComp.height = height;
       const ctxComp = canvasComp.getContext('2d');
       if (ctxComp) {
-        // Filtro de alto contraste para resaltar el texto negro
-        ctxComp.filter = 'grayscale(1) contrast(2) brightness(1.1)';
-        // Dibujamos solo la franja superior
-        ctxComp.drawImage(img, 0, 0, img.width, cropHeight, 0, 0, width, height);
+        // Filtro de alto contraste suave para no perder detalles si hay luz
+        ctxComp.filter = 'grayscale(1) contrast(1.4) brightness(1.1)';
+        ctxComp.drawImage(img, 0, 0, width, height);
         ctxComp.filter = 'none';
       }
 
-      // Convertir a Blob comprimido (Calidad alta para texto pequeño)
+      // Convertir a Blob comprimido (Calidad alta para texto)
       const compressedBlob = await new Promise<Blob>((resolve) => 
         canvasComp.toBlob((b) => resolve(b!), 'image/jpeg', 0.85)
       );
