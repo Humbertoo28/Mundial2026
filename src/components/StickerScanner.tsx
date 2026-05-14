@@ -5,6 +5,13 @@ import { Camera, X, Loader2, CheckCircle2, AlertCircle, Search, Image as ImageIc
 import { motion, AnimatePresence } from 'framer-motion';
 import { getWorker, getOcrStatus, preloadOcrEngine } from '@/lib/ocrEngine';
 
+// Extension for Native Shape Detection API (Android/Chrome)
+declare global {
+  interface Window {
+    TextDetector: any;
+  }
+}
+
 type StickerScannerProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +24,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
+  const nativeDetectorRef = useRef<any>(null);
 
   const [mode, setMode] = useState<'camera' | 'photo' | 'manual'>('camera');
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -24,6 +32,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const [error, setError] = useState<string | null>(null);
   const [detectedId, setDetectedId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [useNative, setUseNative] = useState(false);
 
   const [manualInput, setManualInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -39,33 +48,56 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     normalizedMap.current = map;
   }, [validIds]);
 
-  // Poll OCR engine status
+  // Check for native TextDetector support
   useEffect(() => {
-    if (!isOpen) return;
+    if (typeof window !== 'undefined' && 'TextDetector' in window) {
+      try {
+        nativeDetectorRef.current = new window.TextDetector();
+        setUseNative(true);
+        console.log('[Scanner] Native TextDetector enabled');
+      } catch (e) {
+        console.error('[Scanner] Native detector failed to init');
+      }
+    }
+  }, []);
+
+  // Poll OCR engine status (only if native is not available)
+  useEffect(() => {
+    if (!isOpen || useNative) return;
     const check = () => {
       const { isReady } = getOcrStatus();
       setOcrReady(isReady);
-      if (!isReady) {
-        // Ensure engine is loading
-        preloadOcrEngine().then(() => setOcrReady(true));
-      }
+      if (!isReady) preloadOcrEngine().then(() => setOcrReady(true));
     };
     check();
-    const interval = setInterval(check, 500);
+    const interval = setInterval(check, 1000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, useNative]);
 
-  function matchText(text: string): string | null {
+  const matchText = useCallback((text: string): string | null => {
+    // Regex for 3 letters + number (e.g., POR 14, ARG 10)
+    const pattern = /[A-Z]{3}\s*\d+/g;
+    const matches = text.toUpperCase().match(pattern) || [];
+    
+    // Try explicit matches first
+    for (const m of matches) {
+      const cleaned = m.replace(/\s/g, '');
+      if (normalizedMap.current[cleaned]) return normalizedMap.current[cleaned];
+    }
+
+    // Fallback to word-by-word
     const words = text.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
     for (const w of words) {
       if (normalizedMap.current[w]) return normalizedMap.current[w];
     }
+    
+    // Try combined pairs
     for (let i = 0; i < words.length - 1; i++) {
       const combined = words[i] + words[i + 1];
       if (normalizedMap.current[combined]) return normalizedMap.current[combined];
     }
     return null;
-  }
+  }, []);
 
   // ---- CAMERA ----
   const startCamera = async () => {
@@ -108,59 +140,65 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   // Scan loop
   const scanFrame = useCallback(async () => {
-    if (!isCameraActive || !ocrReady || isProcessingRef.current || detectedId) return;
-    const worker = getWorker();
+    if (!isCameraActive || isProcessingRef.current || detectedId) return;
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!worker || !video || !canvas || video.videoWidth === 0) return;
+    if (!video || video.videoWidth === 0) return;
 
     isProcessingRef.current = true;
     setIsScanning(true);
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) { isProcessingRef.current = false; return; }
-
-    // Crop center region where sticker ID usually is
-    const cropW = Math.min(400, video.videoWidth);
-    const cropH = Math.min(160, video.videoHeight);
-    canvas.width = cropW;
-    canvas.height = cropH;
-    ctx.drawImage(
-      video,
-      (video.videoWidth - cropW) / 2, (video.videoHeight - cropH) / 2,
-      cropW, cropH,
-      0, 0, cropW, cropH
-    );
-
     try {
-      const { data: { text } } = await worker.recognize(canvas);
-      const found = matchText(text);
+      let found: string | null = null;
+
+      if (useNative && nativeDetectorRef.current) {
+        // NATIVE ANDROID/CHROME: Instant and no downloads
+        const results = await nativeDetectorRef.current.detect(video);
+        for (const res of results) {
+          found = matchText(res.rawValue);
+          if (found) break;
+        }
+      } else if (ocrReady) {
+        // TESSERACT FALLBACK: (iOS or old Android)
+        const worker = getWorker();
+        const canvas = canvasRef.current;
+        if (worker && canvas) {
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            const cropW = Math.min(400, video.videoWidth);
+            const cropH = Math.min(160, video.videoHeight);
+            canvas.width = cropW; canvas.height = cropH;
+            ctx.drawImage(video, (video.videoWidth - cropW) / 2, (video.videoHeight - cropH) / 2, cropW, cropH, 0, 0, cropW, cropH);
+            const { data: { text } } = await worker.recognize(canvas);
+            found = matchText(text);
+          }
+        }
+      }
+
       if (found) {
         setDetectedId(found);
         setIsScanning(false);
         onDetected(found);
-        // Auto-reset after delay
         setTimeout(() => { setDetectedId(null); }, 3000);
         isProcessingRef.current = false;
         return;
       }
     } catch (e) {
-      console.error('[OCR] frame error:', e);
+      console.error('[Scanner] Frame error:', e);
     }
 
     setIsScanning(false);
     isProcessingRef.current = false;
-  }, [isCameraActive, ocrReady, detectedId, onDetected]);
+  }, [isCameraActive, ocrReady, detectedId, onDetected, useNative, matchText]);
 
   useEffect(() => {
-    if (!isCameraActive || !ocrReady || mode !== 'camera') return;
+    if (!isCameraActive || mode !== 'camera') return;
     const loop = () => {
       scanFrame();
-      scanTimerRef.current = setTimeout(loop, 1200);
+      scanTimerRef.current = setTimeout(loop, useNative ? 600 : 1200);
     };
     scanTimerRef.current = setTimeout(loop, 500);
     return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
-  }, [isCameraActive, ocrReady, mode, scanFrame]);
+  }, [isCameraActive, mode, scanFrame, useNative]);
 
   // ---- PHOTO ----
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,10 +210,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     setError(null);
 
     try {
-      // Si no está lista, intentamos precargarla y esperamos un poco
       if (!ocrReady) {
         await preloadOcrEngine();
-        // Esperamos hasta 5 segundos a que el estado cambie a listo
         let checks = 0;
         while (!getOcrStatus().isReady && checks < 10) {
           await new Promise(r => setTimeout(r, 500));
@@ -185,7 +221,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
       const worker = getWorker();
       if (!worker) { 
-        setError('La IA aún se está descargando. Espera un momento y reintenta.'); 
+        setError('La IA aún se está descargando. Espera un momento.'); 
         setIsScanning(false); 
         return; 
       }
@@ -197,11 +233,10 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         onDetected(found);
         setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
       } else {
-        setError('No se detectó el número. Asegúrate que la foto sea clara y esté bien iluminada.');
+        setError('No se detectó el código (ej: POR 14). Intenta con mejor luz.');
       }
     } catch (err) { 
-      console.error('[OCR] Photo error:', err);
-      setError('Error al procesar la imagen. Inténtalo de nuevo.'); 
+      setError('Error al procesar la imagen.'); 
     }
     setIsScanning(false);
   };
@@ -220,152 +255,140 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
         className="relative w-full max-w-lg bg-[#0D0D0D] border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
 
-        {/* Header with mode tabs */}
+        {/* Header */}
         <div className="p-3 flex justify-between items-center border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2">
             <div className="bg-[#2A398D]/20 p-1.5 rounded-lg"><Camera className="h-4 w-4 text-[#2A398D]" /></div>
             <h2 className="font-bold text-white text-xs uppercase tracking-widest">Escáner</h2>
-            {ocrReady && mode === 'camera' && (
-              <span className="bg-[#3CAC3B]/20 text-[#3CAC3B] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#3CAC3B]/30">IA Lista</span>
+            {useNative && mode === 'camera' && (
+              <span className="bg-[#3CAC3B]/20 text-[#3CAC3B] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#3CAC3B]/30 flex items-center gap-1">
+                <Zap className="h-2 w-2" /> Nativo
+              </span>
+            )}
+            {!useNative && ocrReady && mode === 'camera' && (
+              <span className="bg-[#2A398D]/20 text-[#2A398D] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#2A398D]/30">IA Lista</span>
             )}
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => setMode('camera')} className={`p-2 rounded-lg text-xs transition-all ${mode === 'camera' ? 'bg-[#2A398D] text-white shadow-lg' : 'text-white/30 hover:bg-white/5'}`}><Camera className="h-4 w-4" /></button>
-            <button onClick={() => setMode('photo')} className={`p-2 rounded-lg text-xs transition-all ${mode === 'photo' ? 'bg-[#2A398D] text-white shadow-lg' : 'text-white/30 hover:bg-white/5'}`}><ImageIcon className="h-4 w-4" /></button>
-            <button onClick={() => setMode('manual')} className={`p-2 rounded-lg text-xs transition-all ${mode === 'manual' ? 'bg-[#2A398D] text-white shadow-lg' : 'text-white/30 hover:bg-white/5'}`}><Search className="h-4 w-4" /></button>
+            <button onClick={() => setMode('camera')} className={`p-2 rounded-lg transition-all ${mode === 'camera' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><Camera className="h-4 w-4" /></button>
+            <button onClick={() => setMode('photo')} className={`p-2 rounded-lg transition-all ${mode === 'photo' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><ImageIcon className="h-4 w-4" /></button>
+            <button onClick={() => setMode('manual')} className={`p-2 rounded-lg transition-all ${mode === 'manual' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><Search className="h-4 w-4" /></button>
             <div className="w-px h-4 bg-white/10 mx-1" />
             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/40"><X className="h-5 w-5" /></button>
           </div>
         </div>
 
-        {/* ===== CAMERA MODE ===== */}
-        {mode === 'camera' && (
-          <div className="relative flex-1 min-h-[350px] bg-black flex items-center justify-center overflow-hidden">
-            <video ref={videoRef} playsInline autoPlay muted className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isCameraActive ? 'opacity-100' : 'opacity-0'}`} />
-
-            {!isCameraActive && !error && (
-              <div className="z-10 flex flex-col items-center gap-3">
-                <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />
-                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Iniciando...</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="z-10 p-8 text-center flex flex-col items-center">
-                <AlertCircle className="h-12 w-12 text-[#E61D25] mb-4" />
-                <p className="text-white text-sm mb-4">{error}</p>
-                <button onClick={startCamera} className="bg-[#2A398D] text-white px-6 py-3 rounded-xl font-bold text-sm">Reintentar</button>
-              </div>
-            )}
-
-            {isCameraActive && !ocrReady && (
-              <div className="absolute top-3 left-3 right-3 z-30">
-                <div className="bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-yellow-500/30 flex items-center gap-2">
-                  <Loader2 className="h-3 w-3 text-yellow-400 animate-spin" />
-                  <span className="text-yellow-200 text-[10px] font-bold uppercase tracking-widest">Cargando IA (solo la primera vez)...</span>
+        {/* Viewport */}
+        <div className="relative flex-1 min-h-[350px] bg-black flex items-center justify-center overflow-hidden">
+          {mode === 'camera' && (
+            <>
+              <video ref={videoRef} playsInline autoPlay muted className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isCameraActive ? 'opacity-100' : 'opacity-0'}`} />
+              
+              {!isCameraActive && !error && (
+                <div className="z-10 flex flex-col items-center gap-3">
+                  <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Iniciando...</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {isCameraActive && (
-              <>
-                {/* Scan frame overlay */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <div className="relative w-64 h-32 border-2 border-white/20 rounded-2xl">
-                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#2A398D] rounded-tl-xl" />
-                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#2A398D] rounded-tr-xl" />
-                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#2A398D] rounded-bl-xl" />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#2A398D] rounded-br-xl" />
-                    {ocrReady && (
+              {isCameraActive && !useNative && !ocrReady && (
+                <div className="absolute top-3 left-3 right-3 z-30">
+                  <div className="bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-yellow-500/30 flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 text-yellow-400 animate-spin" />
+                    <span className="text-yellow-200 text-[10px] font-bold uppercase tracking-widest">Cargando IA...</span>
+                  </div>
+                </div>
+              )}
+
+              {isCameraActive && (
+                <>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="relative w-64 h-32 border-2 border-white/20 rounded-2xl">
+                      <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-[#2A398D] rounded-tl-xl" />
+                      <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-[#2A398D] rounded-tr-xl" />
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-[#2A398D] rounded-bl-xl" />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-[#2A398D] rounded-br-xl" />
                       <motion.div animate={{ top: ['0%', '100%', '0%'] }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                        className="absolute left-0 right-0 h-0.5 bg-[#3CAC3B] shadow-[0_0_15px_#3CAC3B]" />
-                    )}
+                        className={`absolute left-0 right-0 h-0.5 ${useNative ? 'bg-[#3CAC3B] shadow-[0_0_15px_#3CAC3B]' : 'bg-[#2A398D] shadow-[0_0_15px_#2A398D]'}`} />
+                    </div>
                   </div>
-                </div>
 
-                {/* Status badge */}
-                <div className="absolute bottom-5 left-4 right-4 flex justify-center z-20">
-                  <AnimatePresence mode="wait">
-                    {isScanning && !detectedId && (
-                      <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-[#3CAC3B] animate-pulse" />
-                        <span className="text-white text-[10px] font-black uppercase tracking-widest">Escaneando...</span>
-                      </motion.div>
-                    )}
-                    {detectedId && (
-                      <motion.div key="ok" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                        className="bg-[#3CAC3B] px-8 py-3 rounded-full shadow-2xl flex items-center gap-3 border-2 border-white/20">
-                        <CheckCircle2 className="h-6 w-6 text-white" />
-                        <span className="text-white font-black italic text-2xl tracking-tighter">{detectedId}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ===== PHOTO MODE ===== */}
-        {mode === 'photo' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0D0D0D] min-h-[350px]">
-            {!photoPreview ? (
-              <div className="text-center">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                  <ImageIcon className="h-8 w-8 text-white/20" />
-                </div>
-                <h3 className="text-white font-bold mb-1">Escanear Foto</h3>
-                <p className="text-white/40 text-[10px] mb-8 uppercase tracking-wider font-bold">Ideal para iPhone</p>
-                <input type="file" accept="image/*" capture="environment" id="photoIn" className="hidden" onChange={handlePhoto} />
-                <label htmlFor="photoIn" className="bg-[#2A398D] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl cursor-pointer hover:bg-[#3CAC3B] transition-all flex items-center gap-3 active:scale-95 justify-center">
-                  <Camera className="h-4 w-4" /> Tomar Foto
-                </label>
-              </div>
-            ) : (
-              <div className="w-full flex flex-col items-center">
-                <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-4 border border-white/10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoPreview} alt="Captura" className={`w-full h-full object-cover ${isScanning ? 'opacity-40 blur-sm' : ''}`} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    {isScanning && <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />}
-                    {detectedId && (
-                      <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-[#3CAC3B] px-6 py-3 rounded-full shadow-xl flex items-center gap-2">
-                        <CheckCircle2 className="h-6 w-6 text-white" />
-                        <span className="text-white font-black italic text-xl">{detectedId}</span>
-                      </motion.div>
-                    )}
+                  <div className="absolute bottom-5 left-4 right-4 flex justify-center z-20">
+                    <AnimatePresence mode="wait">
+                      {isScanning && !detectedId && (
+                        <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
+                          <Zap className={`h-3 w-3 ${useNative ? 'text-[#3CAC3B]' : 'text-[#2A398D]'} animate-pulse`} />
+                          <span className="text-white text-[10px] font-black uppercase tracking-widest">Escaneando...</span>
+                        </motion.div>
+                      )}
+                      {detectedId && (
+                        <motion.div key="ok" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#3CAC3B] px-8 py-3 rounded-full shadow-2xl flex items-center gap-3 border-2 border-white/20">
+                          <CheckCircle2 className="h-6 w-6 text-white" />
+                          <span className="text-white font-black italic text-2xl tracking-tighter">{detectedId}</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-                {error && <p className="text-[#E61D25] text-sm font-bold mb-4">{error}</p>}
-                {!isScanning && !detectedId && (
-                  <button onClick={() => { setPhotoPreview(null); setError(null); }} className="text-white/40 text-xs font-bold uppercase tracking-widest hover:text-white">Reintentar</button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </>
+          )}
 
-        {/* ===== MANUAL MODE ===== */}
-        {mode === 'manual' && (
-          <div className="flex-1 flex flex-col p-5 gap-4 bg-[#0D0D0D] min-h-[350px]">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/20" />
-              <input type="text" autoFocus placeholder="Escribe el número (ej. PAN 1)" value={manualInput}
-                onChange={e => setManualInput(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#2A398D] placeholder:text-white/10 font-bold" />
+          {mode === 'photo' && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0D0D0D] min-h-[350px]">
+              {!photoPreview ? (
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
+                    <ImageIcon className="h-8 w-8 text-white/20" />
+                  </div>
+                  <h3 className="text-white font-bold mb-1">Escanear Foto</h3>
+                  <input type="file" accept="image/*" capture="environment" id="photoIn" className="hidden" onChange={handlePhoto} />
+                  <label htmlFor="photoIn" className="bg-[#2A398D] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl cursor-pointer hover:bg-[#3CAC3B] transition-all flex items-center gap-3 active:scale-95 justify-center mt-6">
+                    <Camera className="h-4 w-4" /> Tomar Foto
+                  </label>
+                </div>
+              ) : (
+                <div className="w-full flex flex-col items-center">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 border border-white/10 max-h-[300px]">
+                    <img src={photoPreview} className={`w-full h-full object-cover ${isScanning ? 'opacity-40 blur-sm' : ''}`} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {isScanning && <Loader2 className="h-10 w-10 text-[#2A398D] animate-spin" />}
+                      {detectedId && (
+                        <div className="bg-[#3CAC3B] px-6 py-3 rounded-full shadow-xl flex items-center gap-2">
+                          <CheckCircle2 className="h-6 w-6 text-white" />
+                          <span className="text-white font-black italic text-xl">{detectedId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {error && <p className="text-[#E61D25] text-xs font-bold mb-4 text-center px-4">{error}</p>}
+                  {!isScanning && !detectedId && (
+                    <button onClick={() => { setPhotoPreview(null); setError(null); }} className="text-white/40 text-[10px] font-bold uppercase tracking-widest hover:text-white">Reintentar</button>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {suggestions.map(id => (
-                <button key={id} onClick={() => { onDetected(id); onClose(); }}
-                  className="w-full p-4 rounded-2xl bg-white/5 hover:bg-[#2A398D] text-white flex justify-between items-center transition-all group border border-white/5 hover:border-transparent">
-                  <span className="font-black italic text-lg tracking-tighter">{id}</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100">Seleccionar</span>
-                </button>
-              ))}
+          )}
+
+          {mode === 'manual' && (
+            <div className="flex-1 flex flex-col p-5 gap-4 bg-[#0D0D0D] min-h-[350px]">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/20" />
+                <input type="text" autoFocus placeholder="Escribe el código (ej. POR 14)" value={manualInput}
+                  onChange={e => setManualInput(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 text-white rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:border-[#2A398D] placeholder:text-white/10 font-bold" />
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {suggestions.map(id => (
+                  <button key={id} onClick={() => { onDetected(id); onClose(); }} className="w-full p-4 rounded-2xl bg-white/5 hover:bg-[#2A398D] text-white flex justify-between items-center transition-all group border border-white/5 hover:border-transparent">
+                    <span className="font-black italic text-lg tracking-tighter">{id}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100">Seleccionar</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <canvas ref={canvasRef} className="hidden" />
       </motion.div>
