@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Minus, Plus, Layers } from 'lucide-react';
+import { Search, Filter, Minus, Plus, Layers, Camera } from 'lucide-react';
 import { updateStickerQuantity } from '@/app/actions/stickers';
+import StickerScanner from './StickerScanner';
 import { getFlagUrl, getFlagEmoji, sortSectionsWithPanamaFirst, PREFIX_TO_FLAG } from '@/lib/flags';
 import { GROUPS, GroupCode, getGroupForSticker } from '@/lib/groups';
 
@@ -62,6 +63,12 @@ export default function AlbumGrid({
   const [selectedSection, setSelectedSection] = useState('Todas');
   const [selectedGroup, setSelectedGroup] = useState<GroupCode | 'TODOS'>('TODOS');
   const [showOnlyRepeated, setShowOnlyRepeated] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  const handleStickerDetected = (id: string) => {
+    setSearchTerm(id);
+    setIsScannerOpen(false); // Cierra al detectar uno, para confirmar
+  };
 
   const sections = [
     'Todas',
@@ -132,6 +139,13 @@ export default function AlbumGrid({
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#2A398D] text-white rounded-lg hover:bg-[#3CAC3B] transition-colors"
+            title="Escanear figurita"
+          >
+            <Camera className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="flex items-center gap-2 w-full md:flex-1">
@@ -406,6 +420,14 @@ export default function AlbumGrid({
           <p className="text-lg font-medium">No se encontraron figuritas que coincidan con tu búsqueda.</p>
         </div>
       )}
+
+      {/* Escáner Modal */}
+      <StickerScanner 
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onDetected={handleStickerDetected}
+        validIds={stickers.map(s => s.id)}
+      />
     </div>
   );
 }
