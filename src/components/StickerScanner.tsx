@@ -22,7 +22,8 @@ type StickerScannerProps = {
 export default function StickerScanner({ isOpen, onClose, onDetected, validIds }: StickerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const isOpenRef = useRef(isOpen); // Rastreo síncrono del estado abierto
+  const isOpenRef = useRef(isOpen);
+  const isStartingRef = useRef(false); // Bloqueo para evitar doble inicio
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
@@ -180,7 +181,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   // ---- CAMERA ----
   const startCamera = async () => {
-    if (isCameraActive) return;
+    if (isStartingRef.current || isCameraActive) return;
+    isStartingRef.current = true;
     isOpenRef.current = true;
     setError(null);
     setIsCameraActive(false);
@@ -266,20 +268,25 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
           console.error('[Scanner] Error al reproducir video:', playErr);
           throw new Error('No se pudo iniciar la reproducción del video. Intenta refrescar la página.');
         }
+          }
+        }
       }
     } catch (err: any) {
       console.error('[Scanner] Error final de cámara:', err);
-      let msg = 'Error al abrir la cámara.';
-      
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError') {
-        msg = 'Permiso de cámara denegado. Ve a los ajustes del sitio en tu navegador y habilita la cámara.';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        msg = 'No se detectó ninguna cámara en este dispositivo.';
-      } else {
-        msg = err.message || msg;
+      // Solo mostramos error si el escáner sigue abierto
+      if (isOpenRef.current) {
+        let msg = 'Error al abrir la cámara.';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError') {
+          msg = 'Permiso de cámara denegado. Ve a los ajustes del sitio en tu navegador y habilita la cámara.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          msg = 'No se detectó ninguna cámara en este dispositivo.';
+        } else {
+          msg = err.message || msg;
+        }
+        setError(msg);
       }
-      
-      setError(msg);
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
