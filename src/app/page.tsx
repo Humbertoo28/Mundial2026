@@ -51,9 +51,24 @@ export default async function Home() {
   const userId = session.user.id;
   
   // Fetch all stickers to calculate section stats
-  const { data: allStickers } = await supabase
-    .from('stickers')
-    .select('id, name, section');
+  let allStickers: any[] = [];
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data } = await supabase
+      .from('stickers')
+      .select('id, name, section')
+      .order('id', { ascending: true })
+      .range(page * 1000, (page + 1) * 1000 - 1);
+      
+    if (data && data.length > 0) {
+      allStickers = [...allStickers, ...data];
+    }
+    if (!data || data.length < 1000) {
+      hasMore = false;
+    }
+    page++;
+  }
 
   // Fetch all profiles for trader suggestions
   const { data: allProfiles } = await supabase

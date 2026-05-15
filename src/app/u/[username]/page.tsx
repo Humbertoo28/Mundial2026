@@ -53,9 +53,24 @@ export default async function PublicProfile(props: { params: Promise<{ username:
 
   const myOwnedIds = new Set(myStickers?.filter(s => s.quantity > 0).map(s => s.sticker_id));
 
-  const { data: allStickers } = await supabase
-    .from('stickers')
-    .select('id, section');
+  let allStickers: any[] = [];
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data } = await supabase
+      .from('stickers')
+      .select('id, section')
+      .order('id', { ascending: true })
+      .range(page * 1000, (page + 1) * 1000 - 1);
+      
+    if (data && data.length > 0) {
+      allStickers = [...allStickers, ...data];
+    }
+    if (!data || data.length < 1000) {
+      hasMore = false;
+    }
+    page++;
+  }
 
   const totalStickersCount = 994;
   const ownedCount = userStickers?.filter(s => s.quantity > 0).length || 0;

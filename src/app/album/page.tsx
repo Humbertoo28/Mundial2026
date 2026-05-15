@@ -21,16 +21,28 @@ export default async function AlbumPage() {
 
   const userId = session.user.id;
 
-  // Fetch all stickers
-  // Forzamos un límite masivo de 10,000 para evitar cortes al final del abecedario (Uzbekistán)
-  const { data: stickers, error: stickersError } = await supabase
-    .from('stickers')
-    .select('*')
-    .order('id', { ascending: true })
-    .limit(10000);
-
-  if (stickersError) {
-    console.error("Error fetching stickers:", stickersError);
+  // Fetch all stickers bypassing Supabase's 1000-row limit
+  let stickers: any[] = [];
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('stickers')
+      .select('*')
+      .order('id', { ascending: true })
+      .range(page * 1000, (page + 1) * 1000 - 1);
+      
+    if (error) {
+      console.error("Error fetching stickers:", error);
+      break;
+    }
+    if (data && data.length > 0) {
+      stickers = [...stickers, ...data];
+    }
+    if (!data || data.length < 1000) {
+      hasMore = false;
+    }
+    page++;
   }
 
   // Fetch user inventory
