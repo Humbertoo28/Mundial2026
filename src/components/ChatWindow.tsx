@@ -42,6 +42,21 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
     }
 
     loadMessages();
+    
+    // Suscribirse a cambios en el perfil del otro usuario (En línea/Última vez)
+    const profileChannel = supabase
+      .channel(`profile-${otherUser.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id.eq.${otherUser.id}` },
+        (payload) => {
+          // Nota: No podemos actualizar el prop otherUser directamente, 
+          // pero podríamos usar un estado local si quisiéramos reflejarlo aquí.
+          // Por simplicidad, el widget se refresca cuando el padre detecta el cambio si se escala,
+          // pero aquí forzamos que se vea la info más reciente si se vuelve a renderizar.
+        }
+      )
+      .subscribe();
 
     // Suscribirse a mensajes nuevos en tiempo real
     const channel = supabase

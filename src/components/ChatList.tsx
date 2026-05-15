@@ -32,7 +32,45 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
       }
     }
     loadInbox();
+
+    // Suscribirse a cambios en los perfiles para ver quién entra/sale en vivo
+    const profileChannel = supabase
+      .channel('public-profiles')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
+        (payload) => {
+          const updatedProfile = payload.new;
+          setInbox((prev) => 
+            prev.map((chat) => 
+              chat.otherUserId === updatedProfile.id 
+                ? { ...chat, otherUser: { ...chat.otherUser, is_online: updatedProfile.is_online, last_seen: updatedProfile.last_seen } }
+                : chat
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileChannel);
+    };
   }, []);
+
+  const formatLastSeen = (dateStr?: string) => {
+    if (!dateStr) return 'Desconectado';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = (now.getTime() - date.getTime()) / 1000;
+
+    if (diff < 60) return 'Ahora';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+    if (diff < 86400) {
+      if (Math.floor(diff / 3600) === 1) return '1 hora';
+      return `${Math.floor(diff / 3600)} horas`;
+    }
+    return new Intl.DateTimeFormat('es-PA', { day: '2-digit', month: 'short' }).format(date);
+  };
 
   const filteredInbox = inbox.filter(chat => 
     chat.otherUser.username.toLowerCase().includes(filter.toLowerCase())
@@ -89,7 +127,16 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="font-bold text-slate-900 dark:text-white truncate">{chat.otherUser.username}</span>
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="font-bold text-slate-900 dark:text-white">{chat.otherUser.username}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                      chat.otherUser.is_online 
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-white/30'
+                    }`}>
+                      {chat.otherUser.is_online ? 'En línea' : formatLastSeen(chat.otherUser.last_seen)}
+                    </span>
+                  </div>
                   <span className="text-[10px] text-slate-400">
                     {new Intl.DateTimeFormat('es-PA', { hour: '2-digit', minute: '2-digit' }).format(new Date(chat.lastMessage.created_at))}
                   </span>
