@@ -6,11 +6,23 @@ import { useSession } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
+import { getProfile } from '@/app/actions/profile';
 
 export default function ChatWidget() {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState<{ id: string; user: any } | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (session?.user?.id) {
+        const profile = await getProfile();
+        setCurrentProfile(profile);
+      }
+    }
+    loadProfile();
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const handleOpenChat = (e: any) => {
@@ -36,11 +48,15 @@ export default function ChatWidget() {
           >
             {activeChat ? (
               <ChatWindow 
-                currentUser={{ id: session.user.id, username: session.user.name || 'Usuario' }}
+                currentUser={{ 
+                  id: session.user.id, 
+                  username: currentProfile?.username || session.user.name || 'Usuario',
+                  avatar_url: currentProfile?.avatar_url || 'https://flagcdn.com/w80/pa.png'
+                }}
                 otherUser={{ 
                   id: activeChat.id, 
                   username: activeChat.user.username, 
-                  avatar_url: activeChat.user.avatar_url,
+                  avatar_url: activeChat.user.avatar_url || 'https://flagcdn.com/w80/pa.png',
                   is_online: activeChat.user.is_online,
                   last_seen: activeChat.user.last_seen
                 }}

@@ -17,7 +17,7 @@ type Message = {
 };
 
 type ChatWindowProps = {
-  currentUser: { id: string; username: string };
+  currentUser: { id: string; username: string; avatar_url: string | null };
   otherUser: { id: string; username: string; avatar_url: string | null; is_online?: boolean; last_seen?: string };
   onClose: () => void;
 };
@@ -134,11 +134,10 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 overflow-hidden relative">
-              <Image 
-                src={otherUser.avatar_url || '/default-avatar.png'} 
+              <img 
+                src={otherUser.avatar_url || 'https://flagcdn.com/w80/pa.png'} 
                 alt={otherUser.username} 
-                fill 
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
             </div>
             {otherUser.is_online && (
@@ -185,25 +184,41 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
             </p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((msg) => {
+            const isMe = msg.sender_id === currentUser.id;
+            const avatarUrl = isMe 
+              ? (currentUser.avatar_url || 'https://flagcdn.com/w80/pa.png')
+              : (otherUser.avatar_url || 'https://flagcdn.com/w80/pa.png');
+
+            return (
               <div 
-                className={`max-w-[80%] p-3 rounded-2xl text-sm shadow-sm ${
-                  msg.sender_id === currentUser.id 
-                    ? 'bg-indigo-600 text-white rounded-tr-none' 
-                    : 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white rounded-tl-none'
-                }`}
+                key={msg.id} 
+                className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                <p>{msg.content}</p>
-                <p className={`text-[9px] mt-1 text-right ${msg.sender_id === currentUser.id ? 'text-indigo-200' : 'text-slate-400'}`}>
-                  {formatTime(msg.created_at)}
-                </p>
+                {/* Avatar en el mensaje */}
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden shrink-0 border border-slate-200 dark:border-white/10">
+                  <img 
+                    src={avatarUrl} 
+                    alt="Avatar" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div 
+                  className={`max-w-[75%] p-3 rounded-2xl text-sm shadow-sm ${
+                    isMe 
+                      ? 'bg-indigo-600 text-white rounded-br-none' 
+                      : 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white rounded-bl-none'
+                  }`}
+                >
+                  <p className="leading-relaxed">{msg.content}</p>
+                  <p className={`text-[9px] mt-1 ${isMe ? 'text-indigo-200 text-right' : 'text-slate-400'}`}>
+                    {formatTime(msg.created_at)}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

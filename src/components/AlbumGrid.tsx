@@ -66,8 +66,9 @@ export default function AlbumGrid({
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannedSticker, setScannedSticker] = useState<Sticker | null>(null);
 
-  const handleStickerDetected = (id: string) => {
-    setIsScannerOpen(false); // Cierra al detectar uno
+  const handleStickerDetected = (id: string, continuous: boolean) => {
+    if (!continuous) setIsScannerOpen(false); // Solo cierra si no es continuo
+    
     // Buscar la figurita exacta ignorando espacios y mayúsculas
     const sticker = stickers.find(s => s.id.replace(/\s/g, '').toUpperCase() === id.replace(/\s/g, '').toUpperCase());
     if (sticker) {

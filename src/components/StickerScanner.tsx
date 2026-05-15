@@ -15,7 +15,7 @@ declare global {
 type StickerScannerProps = {
   isOpen: boolean;
   onClose: () => void;
-  onDetected: (id: string) => void;
+  onDetected: (id: string, continuous: boolean) => void;
   validIds: string[];
 };
 
@@ -33,6 +33,8 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const [detectedId, setDetectedId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [useNative, setUseNative] = useState(false);
+  const [isContinuous, setIsContinuous] = useState(true); // Default to continuous for better UX
+  const [isSaturated, setIsSaturated] = useState(false);
 
   const [manualInput, setManualInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -339,16 +341,33 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         if (result.OCRExitCode === 1) {
           const text = result.ParsedResults?.[0]?.ParsedText || '';
           found = matchText(text);
+          setIsSaturated(false);
+        } else {
+          setIsSaturated(true);
         }
       }
 
       if (found) {
         setDetectedId(found);
         setIsScanning(false);
-        onDetected(found);
-        setTimeout(() => { setDetectedId(null); }, 3000);
-        isProcessingRef.current = false;
-        return;
+        setIsSaturated(false);
+        
+        // Haptic feedback if available
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(100);
+        }
+        
+        onDetected(found, isContinuous);
+        
+        if (isContinuous) {
+          // Pause briefly then continue
+          setTimeout(() => { setDetectedId(null); isProcessingRef.current = false; }, 2000);
+          return;
+        } else {
+          setTimeout(() => { setDetectedId(null); }, 3000);
+          isProcessingRef.current = false;
+          return;
+        }
       }
     } catch (e) {
       console.error('[Scanner] Frame error:', e);
@@ -360,14 +379,18 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   useEffect(() => {
     if (!isCameraActive || mode !== 'camera') return;
-    const interval = useNative ? 500 : 1500; // Nativo: muy rápido. Cloud: 1.5s (balance velocidad/límites)
+    
+    // Si el servidor está saturado, esperamos mucho más (5 segundos)
+    // Si es nativo, muy rápido. Cloud: 1.8s (un poco más lento para evitar bloqueos)
+    const interval = isSaturated ? 5000 : (useNative ? 500 : 1800);
+    
     const loop = () => {
       scanFrame();
       scanTimerRef.current = setTimeout(loop, interval);
     };
     scanTimerRef.current = setTimeout(loop, 800);
     return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
-  }, [isCameraActive, mode, scanFrame, useNative]);
+  }, [isCameraActive, mode, scanFrame, useNative, isSaturated]);
 
   // ---- PHOTO (Using Fast Cloud OCR to avoid downloads) ----
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -475,6 +498,18 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
             )}
           </div>
           <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setIsContinuous(!isContinuous)} 
+              className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${
+                isContinuous 
+                  ? 'bg-[#3CAC3B]/10 border-[#3CAC3B]/30 text-[#3CAC3B]' 
+                  : 'bg-white/5 border-white/10 text-white/40'
+              }`}
+              title={isContinuous ? "Escaneo Continuo Activo" : "Escaneo Simple"}
+            >
+              {isContinuous ? 'Continuo ON' : 'Simple'}
+            </button>
+            <div className="w-px h-4 bg-white/10 mx-1" />
             <button onClick={() => setMode('camera')} className={`p-2 rounded-lg transition-all ${mode === 'camera' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><Camera className="h-4 w-4" /></button>
             <button onClick={() => setMode('photo')} className={`p-2 rounded-lg transition-all ${mode === 'photo' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><ImageIcon className="h-4 w-4" /></button>
             <button onClick={() => setMode('manual')} className={`p-2 rounded-lg transition-all ${mode === 'manual' ? 'bg-[#2A398D] text-white' : 'text-white/30 hover:bg-white/5'}`}><Search className="h-4 w-4" /></button>

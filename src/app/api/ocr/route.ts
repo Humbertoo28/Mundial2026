@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     // Forward the formData to OCR.space
     const ocrFormData = new FormData();
     ocrFormData.append('file', file);
-    ocrFormData.append('apikey', 'K81165445888957'); // Free API key
+    ocrFormData.append('apikey', process.env.OCR_API_KEY || 'K81165445888957'); 
     ocrFormData.append('language', 'eng');
     ocrFormData.append('scale', 'true');
     ocrFormData.append('OCREngine', '2');
