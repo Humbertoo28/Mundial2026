@@ -115,7 +115,8 @@ export default function AlbumGrid({
     const stickerGroup = getGroupForSticker(s.id);
     const matchesGroup = selectedGroup === 'TODOS' || stickerGroup === selectedGroup;
     
-    const matchesSection = selectedSection === 'Todas' || s.section === selectedSection;
+    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+    const matchesSection = selectedSection === 'Todas' || normalize(s.section) === normalize(selectedSection);
     
     const isRepeated = (inventory[s.id] || 0) > 1;
     const matchesRepeated = !showOnlyRepeated || isRepeated;
