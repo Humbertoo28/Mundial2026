@@ -25,7 +25,8 @@ export default async function AlbumPage() {
   const { data: stickers, error: stickersError } = await supabase
     .from('stickers')
     .select('*')
-    .order('id', { ascending: true });
+    .order('id', { ascending: true })
+    .limit(5000);
 
   if (stickersError) {
     console.error("Error fetching stickers:", stickersError);
