@@ -67,29 +67,31 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     const upperText = text.toUpperCase();
     
     // 1. Casos súper especiales directos
-    // "00" se confunde con "OO", "O0", "0O", "88", "CO"
-    if (upperText.match(/00|OO|O0|0O|88|CO/)) {
+    // "00" se confunde con "OO", "O0", "0O", "88", "CO", "QO"
+    if (upperText.match(/00|OO|O0|0O|88|CO|QO/)) {
       if (normalizedMap.current['00']) return '00';
     }
 
-    // 2. Limpieza básica
+    // 2. Limpieza básica y búsqueda exacta
     const cleanText = upperText.replace(/[^A-Z0-9]/g, '');
     if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
 
-    // 3. Patrones Inteligentes
-    // FWC es difícil: F puede ser E/P, W puede ser V, C puede ser G
-    const fwcMatch = upperText.match(/([EPF][WV][CG])\s*([0-9B S G I L]+)/);
-    if (fwcMatch) {
-      let num = fwcMatch[2].replace(/\s/g, '')
+    // 3. RECONOCIMIENTO ULTRA-AGRESIVO PARA FWC
+    // FWC puede leerse como EWC, PVC, FVC, FWC, FWC, FVG, etc.
+    const fwcRegex = /([EPF][WV][CG0Q])\s*([0-9B S G I L Z O]+)/g;
+    let fMatch;
+    while ((fMatch = fwcRegex.exec(upperText)) !== null) {
+      let num = fMatch[2].replace(/\s/g, '')
         .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
-        .replace(/I/g, '1').replace(/L/g, '1').replace(/O/g, '0');
+        .replace(/I/g, '1').replace(/L/g, '1').replace(/Z/g, '2')
+        .replace(/O/g, '0');
       
       const candidate = 'FWC' + num;
       if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
     }
 
     // 4. Patrón General: Prefijo + Número
-    const pattern = /([A-Z]{2,4})\s*([0-9B S G I L]+)/g;
+    const pattern = /([A-Z0-9]{2,4})\s*([0-9B S G I L Z O]+)/g;
     let match;
     while ((match = pattern.exec(upperText)) !== null) {
       let prefix = match[1];
@@ -98,9 +100,18 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       // Limpiar el número de errores comunes
       let num = rawNum
         .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
-        .replace(/I/g, '1').replace(/L/g, '1').replace(/O/g, '0');
+        .replace(/I/g, '1').replace(/L/g, '1').replace(/Z/g, '2')
+        .replace(/O/g, '0');
 
-      // Correcciones de prefijos de países
+      // Si el prefijo tiene 3 caracteres y se parece a FWC
+      if (prefix.length === 3) {
+        const p = prefix.replace(/E/g, 'F').replace(/P/g, 'F').replace(/V/g, 'W').replace(/G/g, 'C').replace(/0/g, 'C');
+        if (p === 'FWC') {
+          if (normalizedMap.current['FWC' + num]) return normalizedMap.current['FWC' + num];
+        }
+      }
+
+      // Correcciones estándar de prefijos de países
       if (prefix.length === 3 && prefix !== 'FWC' && prefix !== 'CC') {
         prefix = prefix
           .replace(/0/g, 'O').replace(/1/g, 'I')
@@ -112,7 +123,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       const candidates = [
         prefix + num,
         num.length === 1 ? prefix + '0' + num : null,
-        prefix + rawNum, // Probar también sin corregir el número por si acaso
+        prefix + rawNum,
       ].filter(Boolean) as string[];
 
       for (const c of candidates) {
@@ -123,14 +134,19 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     // 5. Búsqueda por palabras sueltas mejorada
     const words = upperText.split(/[^A-Z0-9]+/).filter(w => w.length >= 2);
     for (const w of words) {
+      // Probar si la palabra entera es un código
       if (normalizedMap.current[w]) return normalizedMap.current[w];
       
-      // Probar correcciones de prefijo pegado
-      if (w.length >= 3) {
-        const prefixPart = w.substring(0, 3).replace(/0/g, 'O').replace(/1/g, 'I');
-        const numPart = w.substring(3);
-        const corrected = prefixPart + numPart;
-        if (normalizedMap.current[corrected]) return normalizedMap.current[corrected];
+      // Si la palabra empieza por algo que parece FWC (ej: FWC18 o EWC18)
+      if (w.length >= 4) {
+        const pCandidate = w.substring(0, 3).replace(/E/g, 'F').replace(/P/g, 'F').replace(/V/g, 'W').replace(/G/g, 'C').replace(/0/g, 'C');
+        if (pCandidate === 'FWC') {
+          const numPart = w.substring(3)
+            .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
+            .replace(/I/g, '1').replace(/L/g, '1').replace(/Z/g, '2')
+            .replace(/O/g, '0');
+          if (normalizedMap.current['FWC' + numPart]) return normalizedMap.current['FWC' + numPart];
+        }
       }
     }
 
