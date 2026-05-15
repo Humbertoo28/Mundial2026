@@ -66,54 +66,70 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     
     const upperText = text.toUpperCase();
     
-    // 1. Caso especial directo: "00" (se confunde mucho con "OO" u "O0")
-    if (upperText.includes('00') || upperText.includes('OO') || upperText.includes('O0') || upperText.includes('0O')) {
+    // 1. Casos súper especiales directos
+    // "00" se confunde con "OO", "O0", "0O", "88", "CO"
+    if (upperText.match(/00|OO|O0|0O|88|CO/)) {
       if (normalizedMap.current['00']) return '00';
     }
 
-    // 2. Limpieza básica: quitar símbolos raros pero mantener letras y números
+    // 2. Limpieza básica
     const cleanText = upperText.replace(/[^A-Z0-9]/g, '');
-    
-    // 3. Intento de match directo (si el OCR leyó perfecto "ARG10" o "FWC18")
     if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
 
-    // 4. Buscar patrones: Prefijo (2-3 letras) + Número
-    // Esto captura cosas como "ARG 10", "FWC 18", "CC 1"
-    const pattern = /([A-Z]{2,3})\s*(\d+)/g;
+    // 3. Patrones Inteligentes
+    // FWC es difícil: F puede ser E/P, W puede ser V, C puede ser G
+    const fwcMatch = upperText.match(/([EPF][WV][CG])\s*([0-9B S G I L]+)/);
+    if (fwcMatch) {
+      let num = fwcMatch[2].replace(/\s/g, '')
+        .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
+        .replace(/I/g, '1').replace(/L/g, '1').replace(/O/g, '0');
+      
+      const candidate = 'FWC' + num;
+      if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
+    }
+
+    // 4. Patrón General: Prefijo + Número
+    const pattern = /([A-Z]{2,4})\s*([0-9B S G I L]+)/g;
     let match;
     while ((match = pattern.exec(upperText)) !== null) {
       let prefix = match[1];
-      let num = match[2];
+      let rawNum = match[2].replace(/\s/g, '');
       
-      // Aplicar correcciones de OCR SOLO a prefijos de países (3 letras, no FWC ni CC)
+      // Limpiar el número de errores comunes
+      let num = rawNum
+        .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
+        .replace(/I/g, '1').replace(/L/g, '1').replace(/O/g, '0');
+
+      // Correcciones de prefijos de países
       if (prefix.length === 3 && prefix !== 'FWC' && prefix !== 'CC') {
         prefix = prefix
-          .replace(/0/g, 'O')
-          .replace(/1/g, 'I')
-          .replace('8EL', 'BEL')
-          .replace('BE1', 'BEL')
-          .replace('6ER', 'GER')
-          .replace('E5P', 'ESP')
+          .replace(/0/g, 'O').replace(/1/g, 'I')
+          .replace('8EL', 'BEL').replace('BE1', 'BEL')
+          .replace('6ER', 'GER').replace('E5P', 'ESP')
           .replace('AR6', 'ARG');
       }
       
-      const candidate = (prefix + num);
-      // Probar también con el cero adelante para números de un dígito (ej. ARG 8 -> ARG08)
-      const candidatePadded = num.length === 1 ? prefix + '0' + num : null;
-      
-      if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
-      if (candidatePadded && normalizedMap.current[candidatePadded]) return normalizedMap.current[candidatePadded];
+      const candidates = [
+        prefix + num,
+        num.length === 1 ? prefix + '0' + num : null,
+        prefix + rawNum, // Probar también sin corregir el número por si acaso
+      ].filter(Boolean) as string[];
+
+      for (const c of candidates) {
+        if (normalizedMap.current[c]) return normalizedMap.current[c];
+      }
     }
 
-    // 5. Búsqueda por palabras sueltas (último recurso)
+    // 5. Búsqueda por palabras sueltas mejorada
     const words = upperText.split(/[^A-Z0-9]+/).filter(w => w.length >= 2);
     for (const w of words) {
-      // Probar palabra tal cual
       if (normalizedMap.current[w]) return normalizedMap.current[w];
       
-      // Si la palabra tiene 3 letras, probar corrigiendo 0/1 por O/I (para prefijos pegados al número)
+      // Probar correcciones de prefijo pegado
       if (w.length >= 3) {
-        const corrected = w.substring(0, 3).replace(/0/g, 'O').replace(/1/g, 'I') + w.substring(3);
+        const prefixPart = w.substring(0, 3).replace(/0/g, 'O').replace(/1/g, 'I');
+        const numPart = w.substring(3);
+        const corrected = prefixPart + numPart;
         if (normalizedMap.current[corrected]) return normalizedMap.current[corrected];
       }
     }
