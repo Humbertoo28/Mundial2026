@@ -22,6 +22,7 @@ type StickerScannerProps = {
 export default function StickerScanner({ isOpen, onClose, onDetected, validIds }: StickerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const isOpenRef = useRef(isOpen); // Rastreo síncrono del estado abierto
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
@@ -180,6 +181,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   // ---- CAMERA ----
   const startCamera = async () => {
     if (isCameraActive) return;
+    isOpenRef.current = true;
     setError(null);
     setIsCameraActive(false);
     console.log('[Scanner] Intentando iniciar cámara...');
@@ -203,6 +205,14 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         try {
           console.log('[Scanner] Probando constraints:', constraints);
           stream = await navigator.mediaDevices.getUserMedia(constraints);
+          
+          // VERIFICACIÓN CRÍTICA: ¿Se cerró el escáner mientras esperábamos la cámara?
+          if (!isOpenRef.current && stream) {
+            console.log('[Scanner] Abortando inicio: el escáner se cerró durante la carga.');
+            stream.getTracks().forEach(t => t.stop());
+            return;
+          }
+          
           if (stream) break;
         } catch (e) {
           console.warn('[Scanner] Falló intento:', constraints, e);
@@ -274,6 +284,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   };
 
   const stopCamera = useCallback(() => {
+    isOpenRef.current = false;
     // Detener todos los tracks del stream desde el Ref (más seguro)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => {
@@ -298,6 +309,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   }, []);
 
   useEffect(() => {
+    isOpenRef.current = isOpen;
     if (isOpen && mode === 'camera') {
       startCamera();
     } else {
