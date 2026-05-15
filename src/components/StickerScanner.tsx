@@ -64,61 +64,58 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   const matchText = useCallback((text: string): string | null => {
     if (!text) return null;
     
-    // 1. Limpieza agresiva: Solo letras y números, todo en mayúsculas
-    const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const upperText = text.toUpperCase();
     
-    // 2. Correcciones comunes de OCR (errores típicos de la IA)
-    const normalizedText = cleanText
-      .replace(/P0R/g, 'POR').replace(/PQR/g, 'POR').replace(/F0R/g, 'POR')
-      .replace(/8EL/g, 'BEL').replace(/BE1/g, 'BEL').replace(/B EL/g, 'BEL')
-      .replace(/6ER/g, 'GER').replace(/6E R/g, 'GER')
-      .replace(/E5P/g, 'ESP').replace(/ES P/g, 'ESP')
-      .replace(/AR6/g, 'ARG').replace(/AR 6/g, 'ARG')
-      .replace(/0/g, 'O') // Solo en prefijos
-      .replace(/1/g, 'I');
-
-    console.log('[Scanner] Raw text cleaned:', cleanText);
-
-    // 3. Intento de match directo con limpieza
-    if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
-    
-    // Probar el texto normalizado también
-    if (normalizedMap.current[normalizedText]) return normalizedMap.current[normalizedText];
-
-    // 4. Buscar patrones de 3 letras + números en el texto sucio
-    const pattern = /([A-Z0-9]{3})\s*(\d+)/g;
-    let match;
-    while ((match = pattern.exec(text.toUpperCase())) !== null) {
-      let prefix = match[1]
-        .replace(/0/g, 'O').replace(/1/g, 'I')
-        .replace('8EL', 'BEL').replace('BE1', 'BEL')
-        .replace('6ER', 'GER').replace('E5P', 'ESP');
-      
-      let num = match[2];
-      const candidate = (prefix + num).replace(/\s/g, '');
-      // Versión con cero adelante si el número tiene 1 dígito (BEL8 -> BEL08)
-      const candidatePadded = num.length === 1 ? prefix + '0' + num : '';
-      
-      const toTry = [
-        candidate,
-        candidatePadded,
-        candidate.replace('P0R', 'POR').replace('PQR', 'POR').replace('F0R', 'POR'),
-        candidate.replace('8EL', 'BEL').replace('BE1', 'BEL'),
-        candidate.replace('AR6', 'ARG'),
-      ].filter(Boolean);
-      
-      for (const v of toTry) {
-        if (normalizedMap.current[v]) return normalizedMap.current[v];
-      }
+    // 1. Caso especial directo: "00" (se confunde mucho con "OO" u "O0")
+    if (upperText.includes('00') || upperText.includes('OO') || upperText.includes('O0') || upperText.includes('0O')) {
+      if (normalizedMap.current['00']) return '00';
     }
 
-    // 5. Búsqueda por palabras con corrección individual
-    const words = text.toUpperCase().split(/\s+/).filter(w => w.length >= 2);
+    // 2. Limpieza básica: quitar símbolos raros pero mantener letras y números
+    const cleanText = upperText.replace(/[^A-Z0-9]/g, '');
+    
+    // 3. Intento de match directo (si el OCR leyó perfecto "ARG10" o "FWC18")
+    if (normalizedMap.current[cleanText]) return normalizedMap.current[cleanText];
+
+    // 4. Buscar patrones: Prefijo (2-3 letras) + Número
+    // Esto captura cosas como "ARG 10", "FWC 18", "CC 1"
+    const pattern = /([A-Z]{2,3})\s*(\d+)/g;
+    let match;
+    while ((match = pattern.exec(upperText)) !== null) {
+      let prefix = match[1];
+      let num = match[2];
+      
+      // Aplicar correcciones de OCR SOLO a prefijos de países (3 letras, no FWC ni CC)
+      if (prefix.length === 3 && prefix !== 'FWC' && prefix !== 'CC') {
+        prefix = prefix
+          .replace(/0/g, 'O')
+          .replace(/1/g, 'I')
+          .replace('8EL', 'BEL')
+          .replace('BE1', 'BEL')
+          .replace('6ER', 'GER')
+          .replace('E5P', 'ESP')
+          .replace('AR6', 'ARG');
+      }
+      
+      const candidate = (prefix + num);
+      // Probar también con el cero adelante para números de un dígito (ej. ARG 8 -> ARG08)
+      const candidatePadded = num.length === 1 ? prefix + '0' + num : null;
+      
+      if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
+      if (candidatePadded && normalizedMap.current[candidatePadded]) return normalizedMap.current[candidatePadded];
+    }
+
+    // 5. Búsqueda por palabras sueltas (último recurso)
+    const words = upperText.split(/[^A-Z0-9]+/).filter(w => w.length >= 2);
     for (const w of words) {
-      const cw = w.replace(/[^A-Z0-9]/g, '')
-                 .replace('P0R', 'POR')
-                 .replace('PQR', 'POR');
-      if (normalizedMap.current[cw]) return normalizedMap.current[cw];
+      // Probar palabra tal cual
+      if (normalizedMap.current[w]) return normalizedMap.current[w];
+      
+      // Si la palabra tiene 3 letras, probar corrigiendo 0/1 por O/I (para prefijos pegados al número)
+      if (w.length >= 3) {
+        const corrected = w.substring(0, 3).replace(/0/g, 'O').replace(/1/g, 'I') + w.substring(3);
+        if (normalizedMap.current[corrected]) return normalizedMap.current[corrected];
+      }
     }
 
     return null;
