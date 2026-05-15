@@ -298,8 +298,11 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   }, []);
 
   useEffect(() => {
-    if (isOpen && mode === 'camera') startCamera();
-    if (!isOpen) stopCamera();
+    if (isOpen && mode === 'camera') {
+      startCamera();
+    } else {
+      stopCamera();
+    }
     return () => stopCamera();
   }, [isOpen, mode, stopCamera]);
 
