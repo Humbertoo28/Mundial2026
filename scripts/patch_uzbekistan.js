@@ -30,25 +30,28 @@ const uzbekistanStickers = [
 ];
 
 async function patchUzbekistan() {
-  console.log('Unificando selección de Uzbekistán...');
+  console.log('PURIFICACIÓN TOTAL de Uzbekistán...');
   
-  // Primero borramos cualquier rastro previo para evitar duplicados con secciones mal escritas
-  await supabase
-    .from('stickers')
-    .delete()
-    .filter('id', 'ilike', 'UZB%');
+  // Borrado masivo por ID y por Sección (por si hay nombres mal escritos)
+  await supabase.from('stickers').delete().ilike('id', 'UZB%');
+  await supabase.from('stickers').delete().eq('section', 'UZBEKISTAN');
+  await supabase.from('stickers').delete().ilike('section', 'UZBEKISTAN%');
+
+  const cleanStickers = uzbekistanStickers.map(s => ({
+    id: s.id.trim().toUpperCase(),
+    section: 'UZBEKISTAN', // Texto puro sin espacios
+    type: s.type.trim().toUpperCase(),
+    name: s.name.trim().toUpperCase()
+  }));
 
   const { error } = await supabase
     .from('stickers')
-    .insert(uzbekistanStickers.map(s => ({
-      ...s,
-      section: 'UZBEKISTAN' // Forzamos nombre idéntico
-    })));
+    .insert(cleanStickers);
 
   if (error) {
-    console.error('Error al reparar:', error.message);
+    console.error('Error en la purificación:', error.message);
   } else {
-    console.log('¡Selección de Uzbekistán unificada y completada (20/20)!');
+    console.log('¡Uzbekistán purificado al 100% (20/20)!');
   }
 }
 

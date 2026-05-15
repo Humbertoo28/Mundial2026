@@ -125,8 +125,9 @@ export default function AlbumGrid({
 
   // Group by section
   const groupedStickers = filteredStickers.reduce((acc, sticker) => {
-    if (!acc[sticker.section]) acc[sticker.section] = [];
-    acc[sticker.section].push(sticker);
+    const sectionKey = sticker.section.trim().toUpperCase();
+    if (!acc[sectionKey]) acc[sectionKey] = [];
+    acc[sectionKey].push(sticker);
     return acc;
   }, {} as Record<string, Sticker[]>);
 
