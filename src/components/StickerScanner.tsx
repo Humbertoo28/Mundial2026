@@ -22,8 +22,9 @@ type StickerScannerProps = {
 export default function StickerScanner({ isOpen, onClose, onDetected, validIds }: StickerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const allStreamsRef = useRef<MediaStream[]>([]); // Almacén de todos los streams creados
   const isOpenRef = useRef(isOpen);
-  const isStartingRef = useRef(false); // Bloqueo para evitar doble inicio
+  const isStartingRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
@@ -215,7 +216,10 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
             return;
           }
           
-          if (stream) break;
+          if (stream) {
+            allStreamsRef.current.push(stream); // Registrar para limpieza nuclear
+            break;
+          }
         } catch (e) {
           console.warn('[Scanner] Falló intento:', constraints, e);
           lastErr = e;
@@ -292,18 +296,22 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   const stopCamera = useCallback(() => {
     isOpenRef.current = false;
-    // Detener todos los tracks del stream desde el Ref (más seguro)
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => {
-        t.stop();
-        console.log('[Scanner] Track detenido:', t.label);
-      });
-      streamRef.current = null;
-    }
     
-    // También limpiar el video element por si acaso
+    // LIMPIEZA NUCLEAR: Detener TODOS los streams registrados
+    console.log(`[Scanner] Limpieza nuclear: deteniendo ${allStreamsRef.current.length} streams...`);
+    allStreamsRef.current.forEach(s => {
+      s.getTracks().forEach(t => {
+        t.stop();
+        console.log('[Scanner] Track matado:', t.label);
+      });
+    });
+    allStreamsRef.current = [];
+    streamRef.current = null;
+    
+    // Limpiar el video element
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.pause();
     }
 
     if (scanTimerRef.current) { 
