@@ -150,6 +150,27 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
       }
     }
 
+    // 6. Detección por palabras clave para FWC (Último recurso hiper-tolerante)
+    // Las figuritas FWC suelen decir "FIFA WORLD CUP" en grande. 
+    // Si vemos alguna de estas palabras, asumimos que es FWC.
+    if (upperText.match(/FIFA|WORLD|CUP|F1FA|W0RLD/)) {
+      // Eliminar el año 2026 para que no interfiera buscando las figuritas 20 o 26
+      const textWithoutYear = upperText.replace(/2026|2O26/g, '');
+      
+      // Extraer todos los posibles números del texto (1 a 2 dígitos)
+      const numPattern = /\b([0-9B S G I L Z O]{1,2})\b/g;
+      let nMatch;
+      while ((nMatch = numPattern.exec(textWithoutYear)) !== null) {
+        let num = nMatch[1].replace(/\s/g, '')
+          .replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6')
+          .replace(/I/g, '1').replace(/L/g, '1').replace(/Z/g, '2')
+          .replace(/O/g, '0');
+        
+        const candidate = 'FWC' + num;
+        if (normalizedMap.current[candidate]) return normalizedMap.current[candidate];
+      }
+    }
+
     return null;
   }, []);
 
