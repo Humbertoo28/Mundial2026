@@ -125,7 +125,13 @@ export default function AlbumGrid({
 
   // Group by section
   const groupedStickers = filteredStickers.reduce((acc, sticker) => {
-    const sectionKey = sticker.section.trim().toUpperCase();
+    // Normalización agresiva: quitar tildes, espacios y pasar a mayúsculas
+    const sectionKey = sticker.section
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+      
     if (!acc[sectionKey]) acc[sectionKey] = [];
     acc[sectionKey].push(sticker);
     return acc;
