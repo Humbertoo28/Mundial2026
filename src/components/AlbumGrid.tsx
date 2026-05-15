@@ -37,7 +37,7 @@ export default function AlbumGrid({
     return section;
   };
 
-  const [stickers] = useState<Sticker[]>(initialStickers);
+  const stickers = initialStickers;
   const [inventory, setInventory] = useState<Record<string, number>>(() => {
     const acc: Record<string, number> = {};
     initialUserStickers.forEach(us => {
