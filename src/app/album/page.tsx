@@ -22,11 +22,12 @@ export default async function AlbumPage() {
   const userId = session.user.id;
 
   // Fetch all stickers
+  // Forzamos un límite masivo de 10,000 para evitar cortes al final del abecedario (Uzbekistán)
   const { data: stickers, error: stickersError } = await supabase
     .from('stickers')
     .select('*')
     .order('id', { ascending: true })
-    .limit(5000);
+    .limit(10000);
 
   if (stickersError) {
     console.error("Error fetching stickers:", stickersError);
