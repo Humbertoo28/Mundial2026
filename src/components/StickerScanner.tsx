@@ -323,7 +323,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
   useEffect(() => {
     if (!isCameraActive || mode !== 'camera') return;
-    const interval = useNative ? 700 : 2500; // Nativo: rápido. Cloud: cada 2.5s para no saturar
+    const interval = useNative ? 500 : 1500; // Nativo: muy rápido. Cloud: 1.5s (balance velocidad/límites)
     const loop = () => {
       scanFrame();
       scanTimerRef.current = setTimeout(loop, interval);
