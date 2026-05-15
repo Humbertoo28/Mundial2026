@@ -21,6 +21,7 @@ type StickerScannerProps = {
 
 export default function StickerScanner({ isOpen, onClose, onDetected, validIds }: StickerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef(false);
@@ -213,6 +214,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         throw lastErr || new Error('No se pudo obtener el flujo de video.');
       }
 
+      streamRef.current = stream;
       console.log('[Scanner] Stream obtenido con éxito');
 
       if (videoRef.current) {
@@ -272,11 +274,25 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
   };
 
   const stopCamera = useCallback(() => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+    // Detener todos los tracks del stream desde el Ref (más seguro)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => {
+        t.stop();
+        console.log('[Scanner] Track detenido:', t.label);
+      });
+      streamRef.current = null;
+    }
+    
+    // También limpiar el video element por si acaso
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    if (scanTimerRef.current) { clearTimeout(scanTimerRef.current); scanTimerRef.current = null; }
+
+    if (scanTimerRef.current) { 
+      clearTimeout(scanTimerRef.current); 
+      scanTimerRef.current = null; 
+    }
+    
     setIsCameraActive(false);
     isProcessingRef.current = false;
   }, []);
