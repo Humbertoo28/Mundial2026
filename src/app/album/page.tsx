@@ -50,7 +50,7 @@ export default async function AlbumPage() {
           <Layers className="h-8 w-8 text-[#2A398D]" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-[#2A398D] dark:text-white">Mi Álbum</h1>
+          <h1 className="text-3xl font-bold text-[#2A398D] dark:text-white">Mi Álbum (Súper Parche)</h1>
           <p className="text-[#474A4A]/80 dark:text-white/80">Gestiona tus figuritas, filtra por selección y actualiza tus repetidas.</p>
         </div>
       </div>
