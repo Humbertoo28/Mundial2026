@@ -10,6 +10,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function AlbumPage() {
   const session = await getServerSession(authOptions);

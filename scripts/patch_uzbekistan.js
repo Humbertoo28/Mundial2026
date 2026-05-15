@@ -30,15 +30,25 @@ const uzbekistanStickers = [
 ];
 
 async function patchUzbekistan() {
-  console.log('Reparando selección de Uzbekistán...');
+  console.log('Unificando selección de Uzbekistán...');
+  
+  // Primero borramos cualquier rastro previo para evitar duplicados con secciones mal escritas
+  await supabase
+    .from('stickers')
+    .delete()
+    .filter('id', 'ilike', 'UZB%');
+
   const { error } = await supabase
     .from('stickers')
-    .upsert(uzbekistanStickers, { onConflict: 'id' });
+    .insert(uzbekistanStickers.map(s => ({
+      ...s,
+      section: 'UZBEKISTAN' // Forzamos nombre idéntico
+    })));
 
   if (error) {
     console.error('Error al reparar:', error.message);
   } else {
-    console.log('¡Selección de Uzbekistán completada con éxito (20/20)!');
+    console.log('¡Selección de Uzbekistán unificada y completada (20/20)!');
   }
 }
 
