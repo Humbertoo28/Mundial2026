@@ -64,6 +64,14 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
       .match({ user_id: userId, sticker_id: stickerId });
 
     if (error) throw new Error("Error al eliminar figurita");
+
+    // Registro de log para auditoría de borrado
+    await supabase.from('trade_logs').insert({
+      user_id: userId,
+      trader_name: "SYSTEM_DELETE",
+      given_ids: [stickerId],
+      received_ids: []
+    });
   } else {
     const { error } = await supabase
       .from('user_stickers')
@@ -155,6 +163,16 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
   if (errors.length > 0) {
     console.error("Errors in bulk update:", errors);
     throw new Error("Error al realizar la actualización masiva");
+  }
+
+  // Registro de log para auditoría de borrado masivo
+  if (toDelete.length > 0) {
+    await supabase.from('trade_logs').insert({
+      user_id: userId,
+      trader_name: "SYSTEM_BULK_DELETE",
+      given_ids: toDelete,
+      received_ids: []
+    });
   }
 
   revalidatePath('/');
