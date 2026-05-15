@@ -3,6 +3,7 @@
 import { SessionProvider } from "next-auth/react"
 import { ThemeProvider } from "./ThemeProvider"
 import { useState, useEffect } from 'react'
+import AuthPresenceWrapper from "./AuthPresenceWrapper"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             </h1>
           </div>
         ) : (
-          children
+          <AuthPresenceWrapper>
+            {children}
+          </AuthPresenceWrapper>
         )}
       </SessionProvider>
     </ThemeProvider>

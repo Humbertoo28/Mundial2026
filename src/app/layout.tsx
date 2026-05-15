@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
+import ChatWidget from "@/components/ChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[#D1D4D1] dark:bg-[#000000] text-[#474A4A] dark:text-white">
         <Providers>
           <Navbar />
+          <ChatWidget />
           <main className="flex-1 flex flex-col">
             {children}
           </main>

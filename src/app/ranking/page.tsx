@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/authOptions";
 import { getProfile } from "@/app/actions/profile";
 import PersonalStatsShare from "@/components/PersonalStatsShare";
 import { createClient } from "@supabase/supabase-js";
+import RankingChatButton from "@/components/RankingChatButton";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Forzar revalidación en cada carga
@@ -82,7 +83,7 @@ export default async function RankingPage() {
       <div className="grid grid-cols-1 gap-4">
         {ranking.map((user, index) => {
           const isTop3 = index < 3;
-          const isMe = false; // TODO: handle current user highlight if needed
+          const isMe = user.id === session?.user?.id;
 
           return (
             <div 
@@ -143,12 +144,17 @@ export default async function RankingPage() {
                   <span className="block text-[8px] font-black text-[#474A4A]/40 dark:text-white/40 uppercase tracking-widest">Repetidas</span>
                   <span className="text-lg font-black text-[#2A398D] dark:text-[#4C5DBB]">{user.repetidas}</span>
                 </div>
-                <Link 
-                  href={`/u/${user.username}`}
-                  className="flex items-center justify-center bg-[#2A398D]/5 dark:bg-white/5 hover:bg-[#2A398D] hover:text-white dark:hover:bg-[#4C5DBB] text-[#2A398D] dark:text-white px-4 py-2 rounded-xl transition-all group"
-                >
-                  <Share2 className="h-4 w-4 group-hover:scale-110" />
-                </Link>
+                <div className="flex items-center gap-2">
+                  {!isMe && (
+                    <RankingChatButton userId={user.id} user={user} />
+                  )}
+                  <Link 
+                    href={`/u/${user.username}`}
+                    className="flex items-center justify-center bg-[#2A398D]/5 dark:bg-white/5 hover:bg-[#2A398D] hover:text-white dark:hover:bg-[#4C5DBB] text-[#2A398D] dark:text-white px-4 py-2 rounded-xl transition-all group"
+                  >
+                    <Share2 className="h-4 w-4 group-hover:scale-110" />
+                  </Link>
+                </div>
               </div>
             </div>
           );
