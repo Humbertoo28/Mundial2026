@@ -135,7 +135,7 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 overflow-hidden relative">
               <img 
-                src={otherUser.avatar_url || 'https://flagcdn.com/w80/pa.png'} 
+                src={otherUser.avatar_url?.startsWith('http') ? otherUser.avatar_url : 'https://flagcdn.com/w80/pa.png'} 
                 alt={otherUser.username} 
                 className="w-full h-full object-cover"
               />
@@ -186,9 +186,8 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
         ) : (
           messages.map((msg) => {
             const isMe = msg.sender_id === currentUser.id;
-            const avatarUrl = isMe 
-              ? (currentUser.avatar_url || 'https://flagcdn.com/w80/pa.png')
-              : (otherUser.avatar_url || 'https://flagcdn.com/w80/pa.png');
+            const rawAvatar = isMe ? currentUser.avatar_url : otherUser.avatar_url;
+            const avatarUrl = rawAvatar?.startsWith('http') ? rawAvatar : 'https://flagcdn.com/w80/pa.png';
 
             return (
               <div 

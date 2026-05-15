@@ -116,7 +116,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden relative border-2 border-transparent group-hover:border-indigo-600/30 transition-all">
                   <img 
-                    src={chat.otherUser.avatar_url || 'https://flagcdn.com/w80/pa.png'} 
+                    src={chat.otherUser.avatar_url?.startsWith('http') ? chat.otherUser.avatar_url : 'https://flagcdn.com/w80/pa.png'} 
                     alt={chat.otherUser.username} 
                     className="w-full h-full object-cover"
                   />

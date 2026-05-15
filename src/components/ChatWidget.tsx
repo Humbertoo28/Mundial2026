@@ -51,12 +51,12 @@ export default function ChatWidget() {
                 currentUser={{ 
                   id: session.user.id, 
                   username: currentProfile?.username || session.user.name || 'Usuario',
-                  avatar_url: currentProfile?.avatar_url || 'https://flagcdn.com/w80/pa.png'
+                  avatar_url: currentProfile?.avatar_url?.startsWith('http') ? currentProfile.avatar_url : 'https://flagcdn.com/w80/pa.png'
                 }}
                 otherUser={{ 
                   id: activeChat.id, 
                   username: activeChat.user.username, 
-                  avatar_url: activeChat.user.avatar_url || 'https://flagcdn.com/w80/pa.png',
+                  avatar_url: activeChat.user.avatar_url?.startsWith('http') ? activeChat.user.avatar_url : 'https://flagcdn.com/w80/pa.png',
                   is_online: activeChat.user.is_online,
                   last_seen: activeChat.user.last_seen
                 }}
