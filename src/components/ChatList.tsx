@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, Circle, Loader2, Search } from 'lucide-react';
 import { getInbox } from '@/app/actions/chat';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 type Conversation = {
   otherUserId: string;
