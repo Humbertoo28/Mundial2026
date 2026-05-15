@@ -30,16 +30,13 @@ const uzbekistanStickers = [
 ];
 
 async function patchUzbekistan() {
-  console.log('PURIFICACIÓN TOTAL de Uzbekistán...');
+  console.log('CAMBIO DE ESTRATEGIA: Renombrando sección para romper caché...');
   
-  // Borrado masivo por ID y por Sección (por si hay nombres mal escritos)
   await supabase.from('stickers').delete().ilike('id', 'UZB%');
-  await supabase.from('stickers').delete().eq('section', 'UZBEKISTAN');
-  await supabase.from('stickers').delete().ilike('section', 'UZBEKISTAN%');
 
   const cleanStickers = uzbekistanStickers.map(s => ({
     id: s.id.trim().toUpperCase(),
-    section: 'UZBEKISTAN', // Texto puro sin espacios
+    section: 'UZBEKISTÁN', // Usamos tilde para que sea un nombre "nuevo" para el caché
     type: s.type.trim().toUpperCase(),
     name: s.name.trim().toUpperCase()
   }));
@@ -49,9 +46,9 @@ async function patchUzbekistan() {
     .insert(cleanStickers);
 
   if (error) {
-    console.error('Error en la purificación:', error.message);
+    console.error('Error:', error.message);
   } else {
-    console.log('¡Uzbekistán purificado al 100% (20/20)!');
+    console.log('¡Uzbekistán actualizado con tilde para romper caché (20/20)!');
   }
 }
 

@@ -191,12 +191,11 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
     
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Tu navegador no tiene acceso a la cámara. Asegúrate de usar Chrome o Samsung Internet y que el sitio sea HTTPS.');
+        throw new Error('Tu navegador no tiene acceso a la cámara. Asegúrate de usar Chrome o Samsung Internet.');
       }
 
-      // Intentamos con diferentes configuraciones de mayor a menor compatibilidad
       const attempts = [
-        { video: { facingMode: 'environment' } }, // Primero lo más básico para asegurar compatibilidad
+        { video: { facingMode: 'environment' } },
         { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
         { video: true }
       ];
@@ -206,44 +205,29 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
 
       for (const constraints of attempts) {
         try {
-          console.log('[Scanner] Probando constraints:', constraints);
           stream = await navigator.mediaDevices.getUserMedia(constraints);
-          
-          // VERIFICACIÓN CRÍTICA: ¿Se cerró el escáner mientras esperábamos la cámara?
           if (!isOpenRef.current && stream) {
-            console.log('[Scanner] Abortando inicio: el escáner se cerró durante la carga.');
             stream.getTracks().forEach(t => t.stop());
             return;
           }
-          
           if (stream) {
-            allStreamsRef.current.push(stream); // Registrar para limpieza nuclear
+            allStreamsRef.current.push(stream);
             break;
           }
         } catch (e) {
-          console.warn('[Scanner] Falló intento:', constraints, e);
           lastErr = e;
         }
       }
 
-      if (!stream) {
-        throw lastErr || new Error('No se pudo obtener el flujo de video.');
-      }
-
+      if (!stream) throw lastErr || new Error('No se pudo obtener el video.');
       streamRef.current = stream;
-      console.log('[Scanner] Stream obtenido con éxito');
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        
-        // Forzar play y manejar promesas
         try {
-          // Algunos navegadores requieren load() antes de play()
           videoRef.current.load();
-          
           await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar cámara.')), 10000);
-            
+            const timeout = setTimeout(() => reject(new Error('Tiempo de espera agotado.')), 10000);
             if (!videoRef.current) return;
 
             const handlePlay = async () => {
@@ -251,42 +235,25 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
               try {
                 if (videoRef.current) {
                   await videoRef.current.play();
-                  console.log('[Scanner] Video reproduciéndose');
                   setIsCameraActive(true);
                   resolve();
                 }
-              } catch (playErr) {
-                reject(playErr);
-              }
+              } catch (playErr) { reject(playErr); }
             };
 
             videoRef.current.onloadedmetadata = handlePlay;
             videoRef.current.oncanplay = handlePlay;
-            
-            videoRef.current.onerror = (e) => {
-              clearTimeout(timeout);
-              reject(new Error('Error en el elemento de video del sistema.'));
-            };
           });
         } catch (playErr) {
-          console.error('[Scanner] Error al reproducir video:', playErr);
-          throw new Error('No se pudo iniciar la reproducción del video. Intenta refrescar la página.');
-        }
-          }
+          console.error('[Scanner] Error play:', playErr);
+          throw new Error('Error al reproducir video.');
         }
       }
     } catch (err: any) {
-      console.error('[Scanner] Error final de cámara:', err);
-      // Solo mostramos error si el escáner sigue abierto
+      console.error('[Scanner] Error final:', err);
       if (isOpenRef.current) {
-        let msg = 'Error al abrir la cámara.';
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.name === 'SecurityError') {
-          msg = 'Permiso de cámara denegado. Ve a los ajustes del sitio en tu navegador y habilita la cámara.';
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          msg = 'No se detectó ninguna cámara en este dispositivo.';
-        } else {
-          msg = err.message || msg;
-        }
+        let msg = 'Error de cámara.';
+        if (err.name === 'NotAllowedError') msg = 'Permiso denegado.';
         setError(msg);
       }
     } finally {
@@ -498,7 +465,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
         const found = matchText(text);
         if (found) {
           setDetectedId(found);
-          onDetected(found);
+          onDetected(found, false); // Pasamos false para cerrar el escáner tras detección
           setTimeout(() => { setDetectedId(null); setPhotoPreview(null); }, 2500);
         } else {
           setError('No se detectó el código. Asegúrate que el código (ej: POR 14) esté centrado y nítido.');
@@ -704,7 +671,7 @@ export default function StickerScanner({ isOpen, onClose, onDetected, validIds }
               </div>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {suggestions.map(id => (
-                  <button key={id} onClick={() => { onDetected(id); onClose(); }} className="w-full p-4 rounded-2xl bg-white/5 hover:bg-[#2A398D] text-white flex justify-between items-center transition-all group border border-white/5 hover:border-transparent">
+                  <button key={id} onClick={() => { onDetected(id, false); onClose(); }} className="w-full p-4 flex items-center justify-between bg-[#2A398D]/10 dark:bg-white/5 border border-[#2A398D]/20 dark:border-white/10 rounded-2xl hover:bg-[#3CAC3B] hover:text-white hover:border-[#3CAC3B] transition-all group shadow-sm">
                     <span className="font-black italic text-lg tracking-tighter">{id}</span>
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100">Seleccionar</span>
                   </button>
