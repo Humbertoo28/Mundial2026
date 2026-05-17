@@ -41,7 +41,25 @@ export default function CompareExternalListButton({
           const numbers = rightPart.split(',').map(n => n.trim()).filter(n => n);
           
           numbers.forEach(num => {
-            let stickerId = `${sectionPrefix}${num}`.toUpperCase();
+            let stickerId = '';
+
+            // Si es '00' (ej: FWC 00 o simplemente 00)
+            if (num === '00') {
+              stickerId = '00';
+            } else if (sectionPrefix === 'FWC' || sectionPrefix === 'CC') {
+              // FWC y CC no llevan ceros a la izquierda (ej: FWC2, CC1)
+              const parsedNum = parseInt(num, 10);
+              stickerId = `${sectionPrefix}${isNaN(parsedNum) ? num : parsedNum}`.toUpperCase();
+            } else {
+              // Países sí llevan ceros a la izquierda de forma obligatoria para números < 10 (ej: MEX03)
+              const parsedNum = parseInt(num, 10);
+              if (!isNaN(parsedNum)) {
+                const paddedNum = String(parsedNum).padStart(2, '0');
+                stickerId = `${sectionPrefix}${paddedNum}`.toUpperCase();
+              } else {
+                stickerId = `${sectionPrefix}${num}`.toUpperCase();
+              }
+            }
             
             if (missingIds.has(stickerId)) {
                const original = missingStickers.find(s => s.id.replace(/\s/g, '').toUpperCase() === stickerId);
