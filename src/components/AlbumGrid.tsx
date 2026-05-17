@@ -152,7 +152,6 @@ export default function AlbumGrid({
       
       const id = firstSticker.id;
       let prefix = id.substring(0, 3).toUpperCase();
-      if (prefix === 'JAP') prefix = 'JPN'; // Normalización
       
       const group = getGroupForSticker(id);
       if (!group) {

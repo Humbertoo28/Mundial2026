@@ -3013,140 +3013,140 @@
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP01",
+            "ID": "JPN01",
             "SECCIÓN": "JAPON",
             "TIPO": "ESCUDO",
             "NOMBRE_APELLIDO": "SELECCION DE FUTBOL DE JAPON",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP02",
+            "ID": "JPN02",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "ZION SUZUKI",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP03",
+            "ID": "JPN03",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "HENRY HEROKI MOCHIZUKI",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP04",
+            "ID": "JPN04",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AYUMU SEKO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP05",
+            "ID": "JPN05",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "JUNNOSUKE SUZUKI",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP06",
+            "ID": "JPN06",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "SHOGO TANIGUCHI",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP07",
+            "ID": "JPN07",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TSUYOSHI WATANABE",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP08",
+            "ID": "JPN08",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KAISHU SANO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP09",
+            "ID": "JPN09",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "YUKI SOMA",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP10",
+            "ID": "JPN10",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AO TANAKA",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP11",
+            "ID": "JPN11",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "DAICHI KAMADA",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP12",
+            "ID": "JPN12",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TAKEFUSA KUBO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP13",
+            "ID": "JPN13",
             "SECCIÓN": "JAPON",
             "TIPO": "EQUIPO",
             "NOMBRE_APELLIDO": "SELECCION DE FUTBOL DE JAPON",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP14",
+            "ID": "JPN14",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "RITSU DOAN",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP15",
+            "ID": "JPN15",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KEITO NAKAMURA",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP16",
+            "ID": "JPN16",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TAKUMI MINAMINO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP17",
+            "ID": "JPN17",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "SHUTO MACHINO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP18",
+            "ID": "JPN18",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "JUNYA ITO",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP19",
+            "ID": "JPN19",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KOKI OGAWA",
             "CANTIDAD": 0
         },
         {
-            "ID": "JAP20",
+            "ID": "JPN20",
             "SECCIÓN": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AYASE UEDA",
@@ -11186,7 +11186,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP01",
+            "ID": "JPN01",
             "SELECCION": "JAPON",
             "TIPO": "ESCUDO",
             "NOMBRE_APELLIDO": "SELECCION DE FUTBOL DE JAPON",
@@ -11194,7 +11194,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP02",
+            "ID": "JPN02",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "ZION SUZUKI",
@@ -11202,7 +11202,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP03",
+            "ID": "JPN03",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "HENRY HEROKI MOCHIZUKI",
@@ -11210,7 +11210,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP04",
+            "ID": "JPN04",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AYUMU SEKO",
@@ -11218,7 +11218,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP05",
+            "ID": "JPN05",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "JUNNOSUKE SUZUKI",
@@ -11226,7 +11226,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP06",
+            "ID": "JPN06",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "SHOGO TANIGUCHI",
@@ -11234,7 +11234,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP07",
+            "ID": "JPN07",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TSUYOSHI WATANABE",
@@ -11242,7 +11242,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP08",
+            "ID": "JPN08",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KAISHU SANO",
@@ -11250,7 +11250,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP09",
+            "ID": "JPN09",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "YUKI SOMA",
@@ -11258,7 +11258,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP10",
+            "ID": "JPN10",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AO TANAKA",
@@ -11266,7 +11266,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP11",
+            "ID": "JPN11",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "DAICHI KAMADA",
@@ -11274,7 +11274,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP12",
+            "ID": "JPN12",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TAKEFUSA KUBO",
@@ -11282,7 +11282,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP13",
+            "ID": "JPN13",
             "SELECCION": "JAPON",
             "TIPO": "EQUIPO",
             "NOMBRE_APELLIDO": "SELECCION DE FUTBOL DE JAPON",
@@ -11290,7 +11290,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP14",
+            "ID": "JPN14",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "RITSU DOAN",
@@ -11298,7 +11298,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP15",
+            "ID": "JPN15",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KEITO NAKAMURA",
@@ -11306,7 +11306,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP16",
+            "ID": "JPN16",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "TAKUMI MINAMINO",
@@ -11314,7 +11314,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP17",
+            "ID": "JPN17",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "SHUTO MACHINO",
@@ -11322,7 +11322,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP18",
+            "ID": "JPN18",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "JUNYA ITO",
@@ -11330,7 +11330,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP19",
+            "ID": "JPN19",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "KOKI OGAWA",
@@ -11338,7 +11338,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP20",
+            "ID": "JPN20",
             "SELECCION": "JAPON",
             "TIPO": "NORMAL",
             "NOMBRE_APELLIDO": "AYASE UEDA",
@@ -18384,7 +18384,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP01",
+            "ID": "JPN01",
             "CONTEXTO": "JAPON",
             "TIPO": "ESCUDO",
             "DESCRIPCION": "SELECCION DE FUTBOL DE JAPON",
@@ -18392,7 +18392,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP02",
+            "ID": "JPN02",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "ZION SUZUKI",
@@ -18400,7 +18400,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP03",
+            "ID": "JPN03",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "HENRY HEROKI MOCHIZUKI",
@@ -18408,7 +18408,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP04",
+            "ID": "JPN04",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "AYUMU SEKO",
@@ -18416,7 +18416,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP05",
+            "ID": "JPN05",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "JUNNOSUKE SUZUKI",
@@ -18424,7 +18424,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP06",
+            "ID": "JPN06",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "SHOGO TANIGUCHI",
@@ -18432,7 +18432,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP07",
+            "ID": "JPN07",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "TSUYOSHI WATANABE",
@@ -18440,7 +18440,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP08",
+            "ID": "JPN08",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "KAISHU SANO",
@@ -18448,7 +18448,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP09",
+            "ID": "JPN09",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "YUKI SOMA",
@@ -18456,7 +18456,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP10",
+            "ID": "JPN10",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "AO TANAKA",
@@ -18464,7 +18464,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP11",
+            "ID": "JPN11",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "DAICHI KAMADA",
@@ -18472,7 +18472,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP12",
+            "ID": "JPN12",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "TAKEFUSA KUBO",
@@ -18480,7 +18480,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP13",
+            "ID": "JPN13",
             "CONTEXTO": "JAPON",
             "TIPO": "EQUIPO",
             "DESCRIPCION": "SELECCION DE FUTBOL DE JAPON",
@@ -18488,7 +18488,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP14",
+            "ID": "JPN14",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "RITSU DOAN",
@@ -18496,7 +18496,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP15",
+            "ID": "JPN15",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "KEITO NAKAMURA",
@@ -18504,7 +18504,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP16",
+            "ID": "JPN16",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "TAKUMI MINAMINO",
@@ -18512,7 +18512,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP17",
+            "ID": "JPN17",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "SHUTO MACHINO",
@@ -18520,7 +18520,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP18",
+            "ID": "JPN18",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "JUNYA ITO",
@@ -18528,7 +18528,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP19",
+            "ID": "JPN19",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "KOKI OGAWA",
@@ -18536,7 +18536,7 @@
             "TIENE": 0
         },
         {
-            "ID": "JAP20",
+            "ID": "JPN20",
             "CONTEXTO": "JAPON",
             "TIPO": "NORMAL",
             "DESCRIPCION": "AYASE UEDA",

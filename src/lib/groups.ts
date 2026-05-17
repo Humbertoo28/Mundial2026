@@ -28,8 +28,6 @@ export function getGroupForSticker(stickerId: string): GroupCode | null {
   if (stickerId.startsWith('FWC') || stickerId.startsWith('CC') || stickerId === '00') return null;
   
   let prefix = stickerId.substring(0, 3).toUpperCase();
-  // Normalizar variaciones de prefijos de la base de datos a los códigos oficiales
-  if (prefix === 'JAP') prefix = 'JPN';
   
   return PREFIX_TO_GROUP[prefix] || null;
 }
