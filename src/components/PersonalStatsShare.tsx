@@ -5,7 +5,7 @@ import { Share2, Users, RefreshCw, Trophy, X, MessageSquare, Copy, Check } from 
 
 type Stats = {
   tengo: number;
-  faltan: number;
+  faltantes: number;
   repetidas: number;
   porcentaje: number;
   totalTrades: number;
@@ -72,9 +72,8 @@ export default function PersonalStatsShare({
     };
 
     drawCard(780, 'Tengo', `${stats.tengo} Figuritas`, '#3CAC3B');
-    drawCard(1000, 'Faltantes', stats.faltan, '#E61D25');
+    drawCard(1000, 'Faltantes', stats.faltantes, '#E61D25');
     drawCard(1220, 'Repetidas', stats.repetidas, 'white');
-    drawCard(1440, 'Intercambiadas', stats.totalItemsTraded, 'white');
 
     ctx.font = 'italic 900 100px Arial';
     ctx.fillStyle = 'white';
@@ -187,8 +186,7 @@ export default function PersonalStatsShare({
                  `👤 Usuario: @${username}\n` +
                  `📊 Progreso: ${stats.porcentaje}%\n` +
                  `✅ Conseguidas: ${stats.tengo}\n` +
-                 `🔁 Repetidas: ${stats.repetidas}\n` +
-                 `🤝 Figuritas Intercambiadas: ${stats.totalItemsTraded}\n\n` +
+                 `🔁 Repetidas: ${stats.repetidas}\n\n` +
                  `¡Únete y completa tu álbum! 🇵🇦⚽️\nmundial2026-indol.vercel.app`;
 
     navigator.clipboard.writeText(text);
@@ -266,18 +264,14 @@ export default function PersonalStatsShare({
                     </div>
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
                       <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Faltantes</p>
-                      <p className="text-xl font-black text-[#E61D25]">{stats.faltan}</p>
+                      <p className="text-xl font-black text-[#E61D25]">{stats.faltantes}</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                  <div className="grid grid-cols-1">
+                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex flex-col items-center">
                       <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Repetidas</p>
                       <p className="text-xl font-black text-white">{stats.repetidas}</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                      <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-1">Intercambiadas</p>
-                      <p className="text-xl font-black text-white">{stats.totalItemsTraded}</p>
                     </div>
                   </div>
                 </div>

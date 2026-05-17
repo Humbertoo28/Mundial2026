@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MessageSquare, Check, Copy, RefreshCw, Download, Trash2, AlertCircle } from 'lucide-react';
 import { getFlagEmoji } from '@/lib/flags';
 import TradeManager from './TradeManager';
+import CompareExternalListButton from './CompareExternalListButton';
 import { clearRepeatedStickers } from '@/app/actions/stickers';
 import { useTransition } from 'react';
 
@@ -18,12 +19,14 @@ export default function TradeListButton({
   repeatedStickers,
   allStickers,
   allProfiles = [],
-  username = ''
+  username = '',
+  missingStickers = []
 }: { 
   repeatedStickers: RepeatedSticker[];
   allStickers: { id: string, name: string, section: string }[];
   allProfiles?: string[];
   username?: string;
+  missingStickers?: { id: string, name: string, section: string }[];
 }) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -160,6 +163,10 @@ export default function TradeListButton({
             repeatedStickers={repeatedStickers} 
             allStickers={allStickers} 
             allProfiles={allProfiles}
+          />
+          
+          <CompareExternalListButton 
+            missingStickers={missingStickers}
           />
           
           <button
