@@ -131,6 +131,9 @@ export default function TradeManager({
         });
 
         const result = await executeTrade(givenArray, receivedIds, traderName);
+        if (result.error) {
+          throw new Error(result.error);
+        }
         if (result.success) {
           setSuccess(true);
           const trader = traderName.trim() || 'otro usuario';

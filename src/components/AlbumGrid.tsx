@@ -96,7 +96,8 @@ export default function AlbumGrid({
 
       timeoutRefs.current[stickerId] = setTimeout(async () => {
         try {
-          await updateStickerQuantity(stickerId, newQ);
+          const res = await updateStickerQuantity(stickerId, newQ);
+          if (res?.error) throw new Error(res.error);
           router.refresh();
         } catch (error) {
           console.error('Error updating sticker:', error);

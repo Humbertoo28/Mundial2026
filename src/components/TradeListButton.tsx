@@ -115,7 +115,8 @@ export default function TradeListButton({
   const handleClearAll = () => {
     startTransition(async () => {
       try {
-        await clearRepeatedStickers();
+        const res = await clearRepeatedStickers();
+        if (res?.error) throw new Error(res.error);
         setShowConfirm(false);
       } catch (err) {
         console.error(err);

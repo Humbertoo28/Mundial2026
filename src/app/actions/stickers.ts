@@ -19,7 +19,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
   // 1. Auth check - primero lo más importante
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    throw new Error("No autenticado");
+    return { error: "No autenticado" };
   }
 
   const userId = session.user.id;
@@ -28,12 +28,12 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
   const rl = checkRateLimit(userId, 'updateSticker', 120, 60_000);
   if (!rl.allowed) {
     const secs = Math.ceil((rl.retryAfterMs ?? 60000) / 1000);
-    throw new Error(`Demasiadas actualizaciones. Intenta en ${secs} segundos.`);
+    return { error: `Demasiadas actualizaciones. Intenta en ${secs} segundos.` };
   }
 
   // 3. Validación de inputs - previene inyección y abuso
   if (typeof stickerId !== 'string' || !STICKER_ID_REGEX.test(stickerId)) {
-    throw new Error("ID de figurita inválido");
+    return { error: "ID de figurita inválido" };
   }
 
   if (
@@ -42,7 +42,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
     quantity < 0 ||
     quantity > MAX_QUANTITY
   ) {
-    throw new Error(`Cantidad inválida. Debe ser entre 0 y ${MAX_QUANTITY}`);
+    return { error: `Cantidad inválida. Debe ser entre 0 y ${MAX_QUANTITY}` };
   }
 
   // 4. Verificar que la figurita existe en el catálogo (previene phantom inserts)
@@ -53,7 +53,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
     .single();
 
   if (!stickerExists) {
-    throw new Error("La figurita no existe en el catálogo");
+    return { error: "La figurita no existe en el catálogo" };
   }
 
   // 5. Escritura estrictamente acotada al usuario autenticado
@@ -63,7 +63,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
       .delete()
       .match({ user_id: userId, sticker_id: stickerId });
 
-    if (error) throw new Error("Error al eliminar figurita");
+    if (error) return { error: "Error al eliminar figurita" };
 
     // Registro de log para auditoría de borrado
     await supabase.from('trade_logs').insert({
@@ -80,7 +80,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
         { onConflict: 'user_id, sticker_id' }
       );
 
-    if (error) throw new Error("Error al guardar figurita");
+    if (error) return { error: "Error al guardar figurita" };
   }
 
   revalidatePath('/');
@@ -92,7 +92,7 @@ export async function updateStickerQuantity(stickerId: string, quantity: number)
 export async function bulkUpdateStickerQuantities(updates: { stickerId: string, quantity: number }[]) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    throw new Error("No autenticado");
+    return { error: "No autenticado" };
   }
 
   const userId = session.user.id;
@@ -103,19 +103,19 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
 
   // Limit bulk updates to 100 at a time to prevent abuse and timeouts
   if (updates.length > 100) {
-    throw new Error("Máximo 100 actualizaciones por lote");
+    return { error: "Máximo 100 actualizaciones por lote" };
   }
 
   // Rate limit: una operación masiva cuenta como una operación pesada
   const rl = checkRateLimit(userId, 'bulkUpdateSticker', 30, 60_000); 
   if (!rl.allowed) {
-    throw new Error("Demasiadas actualizaciones masivas. Espera un momento.");
+    return { error: "Demasiadas actualizaciones masivas. Espera un momento." };
   }
 
   // Validar todos los inputs
   for (const update of updates) {
     if (typeof update.stickerId !== 'string' || !STICKER_ID_REGEX.test(update.stickerId)) {
-      throw new Error(`ID de figurita inválido: ${update.stickerId}`);
+      return { error: `ID de figurita inválido: ${update.stickerId}` };
     }
     if (
       typeof update.quantity !== 'number' ||
@@ -123,7 +123,7 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
       update.quantity < 0 ||
       update.quantity > MAX_QUANTITY
     ) {
-      throw new Error(`Cantidad inválida para ${update.stickerId}`);
+      return { error: `Cantidad inválida para ${update.stickerId}` };
     }
   }
 
@@ -162,7 +162,7 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
 
   if (errors.length > 0) {
     console.error("Errors in bulk update:", errors);
-    throw new Error("Error al realizar la actualización masiva");
+    return { error: "Error al realizar la actualización masiva" };
   }
 
   // Registro de log para auditoría de borrado masivo
@@ -183,7 +183,7 @@ export async function bulkUpdateStickerQuantities(updates: { stickerId: string, 
 
 export async function executeTrade(givenIds: string[], receivedIds: string[], traderName?: string) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("No autenticado");
+  if (!session?.user?.id) return { error: "No autenticado" };
   const userId = session.user.id;
 
   const allIds = [...new Set([...givenIds, ...receivedIds])];
@@ -191,12 +191,12 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
 
   // Rate limit
   const rl = checkRateLimit(userId, 'executeTrade', 30, 60_000);
-  if (!rl.allowed) throw new Error("Demasiados intercambios. Espera un momento.");
+  if (!rl.allowed) return { error: "Demasiados intercambios. Espera un momento." };
 
   // Validation
   for (const id of allIds) {
     if (typeof id !== 'string' || !STICKER_ID_REGEX.test(id)) {
-      throw new Error(`ID de figurita inválido: ${id}`);
+      return { error: `ID de figurita inválido: ${id}` };
     }
   }
 
@@ -208,7 +208,7 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   
   const validIds = new Set(validStickers?.map(s => s.id));
   for (const id of allIds) {
-    if (!validIds.has(id)) throw new Error(`La figurita ${id} no existe en el catálogo`);
+    if (!validIds.has(id)) return { error: `La figurita ${id} no existe en el catálogo` };
   }
 
   // --- BUSCAR TRADER EN EL SISTEMA ---
@@ -236,13 +236,13 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   const finalUserQuants = { ...userMap };
   for (const id of givenIds) {
     const cur = finalUserQuants[id] || 0;
-    if (cur <= 0) throw new Error(`No tienes la figurita ${id} para entregar`);
+    if (cur <= 0) return { error: `No tienes la figurita ${id} para entregar` };
     finalUserQuants[id] = cur - 1;
   }
   for (const id of receivedIds) {
     const cur = finalUserQuants[id] || 0;
     const next = cur + 1;
-    if (next > MAX_QUANTITY) throw new Error(`Límite alcanzado para ${id}`);
+    if (next > MAX_QUANTITY) return { error: `Límite alcanzado para ${id}` };
     finalUserQuants[id] = next;
   }
 
@@ -314,7 +314,7 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   }
 
   const results = await Promise.all(promises);
-  if (results.some(r => r.error)) throw new Error("Error al ejecutar el intercambio sincrónico");
+  if (results.some(r => r.error)) return { error: "Error al ejecutar el intercambio sincrónico" };
 
   // Registrar log (no bloqueante)
   if (traderName) {
@@ -336,12 +336,12 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
 
 export async function clearRepeatedStickers() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("No autenticado");
+  if (!session?.user?.id) return { error: "No autenticado" };
   const userId = session.user.id;
 
   // Rate limit
   const rl = checkRateLimit(userId, 'clearRepeated', 5, 60_000); 
-  if (!rl.allowed) throw new Error("Espera un momento antes de volver a borrar.");
+  if (!rl.allowed) return { error: "Espera un momento antes de volver a borrar." };
 
   const { error } = await supabase
     .from('user_stickers')
@@ -349,7 +349,7 @@ export async function clearRepeatedStickers() {
     .eq('user_id', userId)
     .gt('quantity', 1);
 
-  if (error) throw new Error("Error al borrar las repetidas");
+  if (error) return { error: "Error al borrar las repetidas" };
 
   revalidatePath('/');
   revalidatePath('/album');
