@@ -314,7 +314,11 @@ export async function executeTrade(givenIds: string[], receivedIds: string[], tr
   }
 
   const results = await Promise.all(promises);
-  if (results.some(r => r.error)) return { error: "Error al ejecutar el intercambio sincrónico" };
+  const errs = results.filter(r => r.error);
+  if (errs.length > 0) {
+    console.error("Supabase executeTrade errors:", errs.map(e => e.error));
+    return { error: "Error al ejecutar el intercambio en la base de datos: " + errs.map(e => e.error?.message || "Error desconocido").join(", ") };
+  }
 
   // Registrar log (no bloqueante)
   if (traderName) {
