@@ -35,6 +35,10 @@ export default async function Navbar() {
                 <Grid className="h-3 w-3 sm:h-4 sm:w-4" />
                 Mi Álbum
               </Link>
+              <Link href="/intercambio" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                Intercambio
+              </Link>
               <Link href="/ranking" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-white/80 hover:text-white transition-colors whitespace-nowrap">
                 <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
                 Ranking

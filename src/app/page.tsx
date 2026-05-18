@@ -420,21 +420,27 @@ export default async function Home() {
         )}
       </div>
 
-      {/* Generador de Lista de Intercambio ⭐ */}
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-[#3CAC3B]/10 p-2 rounded-lg">
-            <Layers className="h-6 w-6 text-[#3CAC3B]" />
+      {/* Nueva Sección Dedicada de Intercambio ⚽ */}
+      <div className="mb-12 animate-in slide-in-from-bottom-6 duration-700">
+        <div className="bg-gradient-to-r from-[#3CAC3B] to-[#2d8a2c] rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-all">
+          <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-all duration-1000"></div>
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="text-center lg:text-left">
+              <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-3 py-1.5 rounded-full inline-block mb-4 border border-white/10">NUEVA SECCIÓN DEDICADA</span>
+              <h2 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter mb-3">⚽ Panel de Intercambios ⚽</h2>
+              <p className="text-white/90 text-sm max-w-xl font-bold leading-relaxed uppercase tracking-wide">
+                Ahora tienes una sección completa y exclusiva para tus trades. Gestiona repetidas de forma masiva, genera tu lista para WhatsApp, exporta en PDF y conéctate con otros coleccionistas en un solo lugar.
+              </p>
+            </div>
+            <Link 
+              href="/intercambio"
+              className="bg-white text-[#3CAC3B] hover:bg-[#2A398D] hover:text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-md active:scale-95 whitespace-nowrap flex items-center gap-2 border border-white/25 hover:border-transparent"
+            >
+              <Layers className="h-5 w-5" />
+              Ir a Intercambios
+            </Link>
           </div>
-          <h2 className="text-2xl font-bold text-[#2A398D]">Intercambio</h2>
         </div>
-        <TradeListButton 
-          repeatedStickers={repeatedStickers} 
-          allStickers={allStickers || []} 
-          allProfiles={allProfiles?.map(p => p.username!) || []}
-          username={displayName}
-          missingStickers={missingStickers}
-        />
       </div>
       
       {/* Banner de Acción Rápida */}
