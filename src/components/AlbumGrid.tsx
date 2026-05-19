@@ -139,6 +139,22 @@ export default function AlbumGrid({
     return acc;
   }, {} as Record<string, Sticker[]>);
 
+  // Sort stickers within each section numerically by their ID
+  const parseIdNum = (id: string): number => {
+    // Extract trailing number from id: "FWC10" -> 10, "BRA03" -> 3, "00" -> 0
+    const m = id.match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  Object.keys(groupedStickers).forEach(key => {
+    groupedStickers[key].sort((a, b) => {
+      const prefixA = a.id.replace(/\d+$/, '');
+      const prefixB = b.id.replace(/\d+$/, '');
+      if (prefixA !== prefixB) return prefixA.localeCompare(prefixB);
+      return parseIdNum(a.id) - parseIdNum(b.id);
+    });
+  });
+
+
   // Sort sections according to official Group order
   const sortedSections = Object.keys(groupedStickers).sort((a, b) => {
     // Si estamos en la vista de todos, mantener a Panamá de primero como excepción especial
@@ -181,7 +197,11 @@ export default function AlbumGrid({
       return infoA.teamIndex - infoB.teamIndex;
     }
 
-    return a.localeCompare(b);
+    const normA = a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    const normB = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (normA < normB) return -1;
+    if (normA > normB) return 1;
+    return 0;
   });
 
   return (

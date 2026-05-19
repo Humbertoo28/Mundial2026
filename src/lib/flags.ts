@@ -130,12 +130,17 @@ export function getFlagEmoji(sectionName: string): string {
     .replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
 }
 
-// Helper to sort sections, prioritizing Panama
+// Helper to sort sections, prioritizing Panama (deterministic & locale-independent)
 export function sortSectionsWithPanamaFirst(a: string, b: string): number {
   if (a.toUpperCase() === 'PANAMA') return -1;
   if (b.toUpperCase() === 'PANAMA') return 1;
-  return a.localeCompare(b);
+  const normA = a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const normB = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  if (normA < normB) return -1;
+  if (normA > normB) return 1;
+  return 0;
 }
+
 
 export function getSectionDisplayName(section: string): string {
   const normalized = section.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
