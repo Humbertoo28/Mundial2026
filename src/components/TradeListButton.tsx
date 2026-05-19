@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MessageSquare, Check, Copy, RefreshCw, Download, Trash2, AlertCircle } from 'lucide-react';
 import { getFlagEmoji } from '@/lib/flags';
 import TradeManager from './TradeManager';
 import CompareExternalListButton from './CompareExternalListButton';
 import { clearRepeatedStickers } from '@/app/actions/stickers';
 import { useTransition } from 'react';
+import { getGroupForSticker } from '@/lib/groups';
+import { getSectionDisplayName } from '@/lib/flags';
 
 type RepeatedSticker = {
   sticker_id: string;
@@ -32,6 +34,79 @@ export default function TradeListButton({
   const [showPreview, setShowPreview] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const getGroupHeaderForSticker = (id: string): string => {
+    const group = getGroupForSticker(id);
+    if (group) return `GRUPO ${group}`;
+    if (id === '00') return '🏆 LOGO Y ESTADIOS';
+    if (id.startsWith('FWC')) return '✨ ESPECIALES FWC';
+    if (id.startsWith('CC')) return '🥤 ESPECIALES COCA-COLA';
+    return 'OTROS';
+  };
+
+  const GROUP_HEADER_ORDER = [
+    '🏆 LOGO Y ESTADIOS',
+    '✨ ESPECIALES FWC',
+    'GRUPO A',
+    'GRUPO B',
+    'GRUPO C',
+    'GRUPO D',
+    'GRUPO E',
+    'GRUPO F',
+    'GRUPO G',
+    'GRUPO H',
+    'GRUPO I',
+    'GRUPO J',
+    'GRUPO K',
+    'GRUPO L',
+    '🥤 ESPECIALES COCA-COLA',
+    'OTROS'
+  ];
+
+  const compareGroupHeaders = (a: string, b: string) => {
+    const idxA = GROUP_HEADER_ORDER.indexOf(a);
+    const idxB = GROUP_HEADER_ORDER.indexOf(b);
+    const valA = idxA !== -1 ? idxA : 999;
+    const valB = idxB !== -1 ? idxB : 999;
+    return valA - valB;
+  };
+
+  const groupedRepeated = useMemo(() => {
+    const groups: Record<string, RepeatedSticker[]> = {};
+    repeatedStickers.forEach(s => {
+      const header = getGroupHeaderForSticker(s.sticker_id);
+      if (!groups[header]) groups[header] = [];
+      groups[header].push(s);
+    });
+
+    const parseIdNum = (id: string): number => {
+      const m = id.match(/(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+
+    Object.keys(groups).forEach(header => {
+      groups[header].sort((a, b) => {
+        const prefixA = a.sticker_id.replace(/\d+$/, '');
+        const prefixB = b.sticker_id.replace(/\d+$/, '');
+        if (prefixA !== prefixB) return prefixA.localeCompare(prefixB);
+        return parseIdNum(a.sticker_id) - parseIdNum(b.sticker_id);
+      });
+    });
+
+    return groups;
+  }, [repeatedStickers]);
+
+  const sortedGroupHeaders = useMemo(() => {
+    return Object.keys(groupedRepeated).sort(compareGroupHeaders);
+  }, [groupedRepeated]);
+
+  const getStickerType = (id: string): string => {
+    if (id === '00') return 'PANINI LOGO';
+    if (id.startsWith('FWC')) return 'ESPECIAL';
+    if (id.startsWith('CC')) return 'COCA-COLA';
+    if (id.replace(/\D/g, '') === '1') return 'ESCUDO';
+    return 'NORMAL';
+  };
 
   const generateTradeText = () => {
     if (repeatedStickers.length === 0) return null;
@@ -306,8 +381,65 @@ export default function TradeListButton({
         </div>
       )}
 
-      {/* Mini pills de secciones */}
+      {/* Repeated Stickers Grouped by World Cup Groups (Exactly like the photo) */}
       {!showPreview && (
+        <div className="flex flex-col gap-6 mt-6">
+          {sortedGroupHeaders.map(header => {
+            const stickersInGroup = groupedRepeated[header];
+            if (!stickersInGroup || stickersInGroup.length === 0) return null;
+
+            return (
+              <div key={header} className="flex flex-col gap-3">
+                {/* Group Section Header */}
+                <div className="flex items-center justify-between border-b border-[#474A4A]/10 dark:border-white/10 pb-1.5 mb-1">
+                  <span className="font-black text-[#2A398D] dark:text-[#4C5DBB] uppercase tracking-wider text-xs flex items-center gap-1.5">
+                    {header}
+                  </span>
+                  <span className="text-[10px] font-black bg-[#2A398D]/10 dark:bg-white/10 text-[#2A398D] dark:text-white px-2.5 py-0.5 rounded-full">
+                    {stickersInGroup.reduce((acc, s) => acc + (s.quantity - 1), 0)} extra{stickersInGroup.reduce((acc, s) => acc + (s.quantity - 1), 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Stickers Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {stickersInGroup.map(s => {
+                    const extras = s.quantity - 1;
+                    const stickerType = getStickerType(s.sticker_id);
+                    return (
+                      <div 
+                        key={s.sticker_id}
+                        className="bg-white dark:bg-[#0D0D0D] border-2 border-[#2A398D]/30 dark:border-[#4C5DBB]/30 rounded-2xl p-3 flex flex-col justify-between gap-1 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] duration-200"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px]">{getFlagEmoji(s.section)}</span>
+                            <span className="text-[10px] font-black text-[#2A398D] dark:text-[#4C5DBB] uppercase tracking-wider">{s.sticker_id}</span>
+                          </div>
+                          <span className="bg-[#2A398D] dark:bg-[#4C5DBB] text-white rounded-full w-5 h-5 flex items-center justify-center text-[9px] font-black">
+                            x{extras}
+                          </span>
+                        </div>
+                        
+                        <div className="mt-1">
+                          <h4 className="text-[10px] font-black text-gray-800 dark:text-white/90 line-clamp-1 uppercase leading-tight">
+                            {s.name}
+                          </h4>
+                          <span className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5 block">
+                            {stickerType}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+
+        {/* 
         <div className="flex flex-wrap gap-2">
           {(() => {
             const bySection: Record<string, number> = {};
@@ -323,6 +455,7 @@ export default function TradeListButton({
           })()}
         </div>
       )}
+      */}
     </div>
   );
 }
