@@ -37,6 +37,52 @@ export default function AlbumGrid({
     return section;
   };
 
+  const getGroupInfo = (sectionName: string) => {
+    // Find the first sticker of this section in the main catalog
+    const firstSticker = initialStickers.find(s => {
+      const norm = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+      return norm(s.section) === norm(sectionName);
+    });
+    if (!firstSticker) return { groupIndex: 999, teamIndex: 999 };
+    
+    const id = firstSticker.id;
+    let prefix = id.substring(0, 3).toUpperCase();
+    
+    const group = getGroupForSticker(id);
+    if (!group) {
+      if (id === '00') return { groupIndex: -3, teamIndex: 0 };
+      if (id.startsWith('FWC')) return { groupIndex: -2, teamIndex: 0 };
+      if (id.startsWith('CC')) return { groupIndex: 998, teamIndex: 0 };
+      return { groupIndex: 999, teamIndex: 999 };
+    }
+    
+    const groupKeys = Object.keys(GROUPS);
+    const groupIndex = groupKeys.indexOf(group);
+    const teamIndex = GROUPS[group as GroupCode].indexOf(prefix);
+    
+    return { groupIndex, teamIndex };
+  };
+
+  const compareSections = (a: string, b: string) => {
+    const infoA = getGroupInfo(a);
+    const infoB = getGroupInfo(b);
+
+    if (infoA.groupIndex !== infoB.groupIndex) {
+      return infoA.groupIndex - infoB.groupIndex;
+    }
+    
+    if (infoA.teamIndex !== infoB.teamIndex) {
+      return infoA.teamIndex - infoB.teamIndex;
+    }
+
+    const normA = a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    const normB = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (normA < normB) return -1;
+    if (normA > normB) return 1;
+    return 0;
+  };
+
+
   const stickers = initialStickers;
   const [inventory, setInventory] = useState<Record<string, number>>(() => {
     const acc: Record<string, number> = {};
@@ -80,7 +126,7 @@ export default function AlbumGrid({
 
   const sections = [
     'Todas',
-    ...Array.from(new Set(stickers.map(s => s.section))).sort(sortSectionsWithPanamaFirst),
+    ...Array.from(new Set(stickers.map(s => s.section))).sort(compareSections),
   ];
 
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
@@ -156,53 +202,7 @@ export default function AlbumGrid({
 
 
   // Sort sections according to official Group order
-  const sortedSections = Object.keys(groupedStickers).sort((a, b) => {
-    // Si estamos en la vista de todos, mantener a Panamá de primero como excepción especial
-    if (selectedGroup === 'TODOS') {
-      if (a.toUpperCase() === 'PANAMA') return -1;
-      if (b.toUpperCase() === 'PANAMA') return 1;
-    }
-
-    const getGroupInfo = (sectionName: string) => {
-      const firstSticker = groupedStickers[sectionName][0];
-      if (!firstSticker) return { groupIndex: 999, teamIndex: 999 };
-      
-      const id = firstSticker.id;
-      let prefix = id.substring(0, 3).toUpperCase();
-      
-      const group = getGroupForSticker(id);
-      if (!group) {
-        // Ordenar secciones especiales al principio
-        if (id === '00') return { groupIndex: -3, teamIndex: 0 };
-        if (id.startsWith('FWC')) return { groupIndex: -2, teamIndex: 0 };
-        if (id.startsWith('CC')) return { groupIndex: 998, teamIndex: 0 };
-        return { groupIndex: 999, teamIndex: 999 };
-      }
-      
-      const groupKeys = Object.keys(GROUPS);
-      const groupIndex = groupKeys.indexOf(group);
-      const teamIndex = GROUPS[group as GroupCode].indexOf(prefix);
-      
-      return { groupIndex, teamIndex };
-    };
-
-    const infoA = getGroupInfo(a);
-    const infoB = getGroupInfo(b);
-
-    if (infoA.groupIndex !== infoB.groupIndex) {
-      return infoA.groupIndex - infoB.groupIndex;
-    }
-    
-    if (infoA.teamIndex !== infoB.teamIndex) {
-      return infoA.teamIndex - infoB.teamIndex;
-    }
-
-    const normA = a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-    const normB = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-    if (normA < normB) return -1;
-    if (normA > normB) return 1;
-    return 0;
-  });
+  const sortedSections = Object.keys(groupedStickers).sort(compareSections);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
