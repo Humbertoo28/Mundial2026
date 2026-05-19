@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Layers, Minus, Check, X, AlertCircle, RefreshCw, Plus, ArrowRight, User, Search, Trash2 } from 'lucide-react';
 import { executeTrade } from '@/app/actions/stickers';
 import { getSectionDisplayName, getFlagEmoji } from '@/lib/flags';
+import { getGroupForSticker } from '@/lib/groups';
 
 type RepeatedSticker = {
   sticker_id: string;
@@ -47,6 +48,73 @@ export default function TradeManager({
     });
     return map;
   }, [allStickers]);
+
+  const getGroupHeaderForSticker = (id: string): string => {
+    const group = getGroupForSticker(id);
+    if (group) return `GRUPO ${group}`;
+    if (id === '00') return '🏆 LOGO Y ESTADIOS';
+    if (id.startsWith('FWC')) return '✨ ESPECIALES FWC';
+    if (id.startsWith('CC')) return '🥤 ESPECIALES COCA-COLA';
+    return 'OTROS';
+  };
+
+  const GROUP_HEADER_ORDER = [
+    '🏆 LOGO Y ESTADIOS',
+    '✨ ESPECIALES FWC',
+    'GRUPO A',
+    'GRUPO B',
+    'GRUPO C',
+    'GRUPO D',
+    'GRUPO E',
+    'GRUPO F',
+    'GRUPO G',
+    'GRUPO H',
+    'GRUPO I',
+    'GRUPO J',
+    'GRUPO K',
+    'GRUPO L',
+    '🥤 ESPECIALES COCA-COLA',
+    'OTROS'
+  ];
+
+  const compareGroupHeaders = (a: string, b: string) => {
+    const idxA = GROUP_HEADER_ORDER.indexOf(a);
+    const idxB = GROUP_HEADER_ORDER.indexOf(b);
+    const valA = idxA !== -1 ? idxA : 999;
+    const valB = idxB !== -1 ? idxB : 999;
+    return valA - valB;
+  };
+
+  // Group repeated stickers by World Cup group
+  const groupedRepeated = useMemo(() => {
+    const groups: Record<string, RepeatedSticker[]> = {};
+    repeatedStickers.forEach(s => {
+      const header = getGroupHeaderForSticker(s.sticker_id);
+      if (!groups[header]) groups[header] = [];
+      groups[header].push(s);
+    });
+
+    // Sort stickers inside each group numerically/by ID
+    const parseIdNum = (id: string): number => {
+      const m = id.match(/(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+
+    Object.keys(groups).forEach(header => {
+      groups[header].sort((a, b) => {
+        const prefixA = a.sticker_id.replace(/\d+$/, '');
+        const prefixB = b.sticker_id.replace(/\d+$/, '');
+        if (prefixA !== prefixB) return prefixA.localeCompare(prefixB);
+        return parseIdNum(a.sticker_id) - parseIdNum(b.sticker_id);
+      });
+    });
+
+    return groups;
+  }, [repeatedStickers]);
+
+  const sortedGroupHeaders = useMemo(() => {
+    return Object.keys(groupedRepeated).sort(compareGroupHeaders);
+  }, [groupedRepeated]);
 
   const toggleSelect = (id: string, maxQuantity: number) => {
     const newQuants = { ...selectedQuantities };
@@ -280,80 +348,97 @@ export default function TradeManager({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 max-h-full overflow-y-auto pr-1 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto max-h-[55vh] pr-1 custom-scrollbar flex flex-col gap-6">
                 {repeatedStickers.length === 0 ? (
-                  <div className="col-span-full py-12 text-center text-[#474A4A]/30 italic font-bold uppercase text-xs">
+                  <div className="py-12 text-center text-[#474A4A]/30 italic font-bold uppercase text-xs">
                     No tienes figuritas repetidas registradas
                   </div>
-                ) : repeatedStickers.map(s => {
-                  const qtySelected = selectedQuantities[s.sticker_id] || 0;
-                  const isSelected = qtySelected > 0;
-                  return (
-                    <button
-                      key={s.sticker_id}
-                      onClick={() => toggleSelect(s.sticker_id, s.quantity)}
-                      className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-start gap-1 text-left group active:scale-95 ${
-                        isSelected 
-                          ? 'border-[#E61D25] bg-[#E61D25]/5 shadow-sm' 
-                          : 'border-[#474A4A]/10 hover:border-[#2A398D]/20 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-[8px] font-bold text-[#474A4A]/40 uppercase truncate">
-                          {getSectionDisplayName(s.section)}
+                ) : (
+                  sortedGroupHeaders.map(header => (
+                    <div key={header} className="flex flex-col gap-2">
+                      <div className="sticky top-0 z-10 bg-white dark:bg-[#000000] py-1 border-b border-[#474A4A]/10 dark:border-white/10 mb-2 flex items-center justify-between">
+                        <span className="font-black text-[#2A398D] dark:text-[#4C5DBB] uppercase tracking-wider text-xs flex items-center gap-1.5">
+                          {header}
                         </span>
-                        <span className="text-[10px] font-black text-[#2A398D]">{s.sticker_id}</span>
-                      </div>
-                      <span className="text-xs font-black text-[#474A4A] dark:text-white/90 line-clamp-1">{s.name}</span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[9px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full">
-                          Tienes x{s.quantity}
+                        <span className="text-[9px] font-black bg-[#2A398D]/10 dark:bg-white/10 text-[#2A398D] dark:text-white px-2 py-0.5 rounded-full">
+                          {groupedRepeated[header].length} repetida{groupedRepeated[header].length !== 1 ? 's' : ''}
                         </span>
-                        {isSelected && (
-                          <div className="flex items-center bg-[#2A398D] rounded-full overflow-hidden ml-auto animate-in zoom-in duration-200">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newQuants = { ...selectedQuantities };
-                                if (qtySelected > 1) {
-                                  newQuants[s.sticker_id] = qtySelected - 1;
-                                } else {
-                                  delete newQuants[s.sticker_id];
-                                }
-                                setSelectedQuantities(newQuants);
-                              }}
-                              className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-r border-white/10"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="px-2 py-1 text-[10px] font-black text-white min-w-[40px] text-center">
-                              Das x{qtySelected}
-                            </span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (qtySelected < s.quantity - 1) {
-                                  setSelectedQuantities({
-                                    ...selectedQuantities,
-                                    [s.sticker_id]: qtySelected + 1
-                                  });
-                                }
-                              }}
-                              className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-l border-white/10"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
                       </div>
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 bg-[#E61D25] text-white rounded-full p-1 shadow-sm ring-2 ring-white">
-                          <Check className="h-2 w-2" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        {groupedRepeated[header].map(s => {
+                          const qtySelected = selectedQuantities[s.sticker_id] || 0;
+                          const isSelected = qtySelected > 0;
+                          return (
+                            <button
+                              key={s.sticker_id}
+                              onClick={() => toggleSelect(s.sticker_id, s.quantity)}
+                              className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-start gap-1 text-left group active:scale-95 ${
+                                isSelected 
+                                  ? 'border-[#E61D25] bg-[#E61D25]/5 shadow-sm' 
+                                  : 'border-[#474A4A]/10 dark:border-white/10 hover:border-[#2A398D]/20 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[8px] font-bold text-[#474A4A]/40 uppercase truncate">
+                                  {getSectionDisplayName(s.section)}
+                                </span>
+                                <span className="text-[10px] font-black text-[#2A398D]">{s.sticker_id}</span>
+                              </div>
+                              <span className="text-xs font-black text-[#474A4A] dark:text-white/90 line-clamp-1">{s.name}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-0.5 rounded-full">
+                                  Tienes x{s.quantity}
+                                </span>
+                                {isSelected && (
+                                  <div className="flex items-center bg-[#2A398D] rounded-full overflow-hidden ml-auto animate-in zoom-in duration-200">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newQuants = { ...selectedQuantities };
+                                        if (qtySelected > 1) {
+                                          newQuants[s.sticker_id] = qtySelected - 1;
+                                        } else {
+                                          delete newQuants[s.sticker_id];
+                                        }
+                                        setSelectedQuantities(newQuants);
+                                      }}
+                                      className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-r border-white/10"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </button>
+                                    <span className="px-2 py-1 text-[10px] font-black text-white min-w-[40px] text-center">
+                                      Das x{qtySelected}
+                                    </span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (qtySelected < s.quantity - 1) {
+                                          setSelectedQuantities({
+                                            ...selectedQuantities,
+                                            [s.sticker_id]: qtySelected + 1
+                                          });
+                                        }
+                                      }}
+                                      className="px-2 py-1 hover:bg-black/20 text-white transition-colors border-l border-white/10"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <div className="absolute -top-1 -right-1 bg-[#E61D25] text-white rounded-full p-1 shadow-sm ring-2 ring-white">
+                                  <Check className="h-2 w-2" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
