@@ -124,9 +124,22 @@ export default function AlbumGrid({
     }
   };
 
+  const cleanForSorting = (name: string): string => {
+    return name
+      .replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+  };
+
   const sections = [
     'Todas',
-    ...Array.from(new Set(stickers.map(s => s.section))).sort(compareSections),
+    ...Array.from(new Set(stickers.map(s => s.section))).sort((a, b) => {
+      const nameA = cleanForSorting(getSectionDisplayName(a));
+      const nameB = cleanForSorting(getSectionDisplayName(b));
+      return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
+    }),
   ];
 
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
