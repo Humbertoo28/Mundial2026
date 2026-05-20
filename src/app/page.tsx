@@ -149,16 +149,70 @@ export default async function Home() {
     });
   }
 
-  // Filter sections that actually have missing stickers and sort them by most missing
+  // Filter sections that actually have missing stickers
   const missingBySection = Object.entries(sectionStats)
-    .filter(([_, stats]) => stats.missing > 0)
-    .sort((a, b) => {
-      // If one is Panama, it goes first
-      if (a[0].toUpperCase() === 'PANAMA') return -1;
-      if (b[0].toUpperCase() === 'PANAMA') return 1;
-      // Otherwise sort by missing count
-      return b[1].missing - a[1].missing;
+    .filter(([_, stats]) => stats.missing > 0);
+
+  // Helper to find group information for a section
+  const getGroupInfo = (sectionName: string) => {
+    const firstSticker = allStickers.find(s => {
+      const norm = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+      return norm(s.section) === norm(sectionName);
     });
+    if (!firstSticker) return { groupIndex: 999, teamIndex: 999, groupName: 'OTROS' };
+    
+    const id = firstSticker.id;
+    let prefix = id.substring(0, 3).toUpperCase();
+    
+    const group = getGroupForSticker(id);
+    if (!group) {
+      if (id === '00' || id.startsWith('00')) return { groupIndex: -3, teamIndex: 0, groupName: '🏆 LOGO Y ESTADIOS' };
+      if (id.startsWith('FWC')) return { groupIndex: -2, teamIndex: 0, groupName: '✨ ESPECIALES FWC' };
+      if (id.startsWith('CC')) return { groupIndex: 998, teamIndex: 0, groupName: '🥤 ESPECIALES COCA-COLA' };
+      return { groupIndex: 999, teamIndex: 999, groupName: 'OTROS' };
+    }
+    
+    const groupKeys = Object.keys(GROUPS);
+    const groupIndex = groupKeys.indexOf(group);
+    const teamIndex = GROUPS[group as GroupCode].indexOf(prefix);
+    
+    return { groupIndex, teamIndex, groupName: `GRUPO ${group}` };
+  };
+
+  // Group missing sections by World Cup group
+  const groupedSections: Record<string, {
+    groupIndex: number;
+    sections: [string, { total: number; missing: number }][];
+  }> = {};
+
+  missingBySection.forEach(([section, data]) => {
+    const { groupName, groupIndex } = getGroupInfo(section);
+    if (!groupedSections[groupName]) {
+      groupedSections[groupName] = {
+        groupIndex,
+        sections: []
+      };
+    }
+    groupedSections[groupName].sections.push([section, data]);
+  });
+
+  const sortedGroups = Object.entries(groupedSections)
+    .sort((a, b) => a[1].groupIndex - b[1].groupIndex)
+    .map(([groupName, groupData]) => {
+      const sortedSects = groupData.sections.sort((a, b) => {
+        const infoA = getGroupInfo(a[0]);
+        const infoB = getGroupInfo(b[0]);
+        if (infoA.teamIndex !== infoB.teamIndex) {
+          return infoA.teamIndex - infoB.teamIndex;
+        }
+        return a[0].localeCompare(b[0]);
+      });
+      return {
+        groupName,
+        sections: sortedSects
+      };
+    });
+
 
   // Build missing stickers list
   const missingStickers: { id: string, name: string, section: string }[] = [];
@@ -368,46 +422,60 @@ export default async function Home() {
         </div>
         
         {missingBySection.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {missingBySection.map(([section, data]) => {
-              const isAlmostComplete = data.missing <= 3;
-              const isPanama = section.toUpperCase() === 'PANAMA';
-              
-              return (
-                <div key={section} className={`bg-white dark:bg-[#0D0D0D] border p-4 rounded-xl shadow-sm flex flex-col justify-between transition-all hover:scale-105 ${
-                  isPanama ? 'border-[#E61D25] shadow-[#E61D25]/10' :
-                  isAlmostComplete ? 'border-[#3CAC3B]/30' : 'border-[#474A4A]/20 dark:border-white/10'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    {getFlagUrl(section) ? (
-                      <img 
-                        src={getFlagUrl(section)!} 
-                        alt={section} 
-                        loading="lazy"
-                        className="w-6 h-6 object-cover rounded-full shadow-sm border border-[#474A4A]/20 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 flex items-center justify-center bg-[#D1D4D1] rounded-full text-xs shadow-sm border border-[#474A4A]/20">🏆</div>
-                    )}
-                    <span className="font-bold text-[#2A398D] text-sm uppercase tracking-wider line-clamp-1">{getSectionDisplayName(section)}</span>
-                  </div>
-                  <div className="flex items-end justify-between mt-2">
-                    <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-medium">Faltan</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className={`text-2xl font-black ${isAlmostComplete ? 'text-[#3CAC3B]' : 'text-[#E61D25]'}`}>
-                        {data.missing}
-                      </span>
-                      <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-bold">/ {data.total}</span>
-                    </div>
-                  </div>
-                  {isAlmostComplete && (
-                    <div className="mt-2 text-[10px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-1 rounded-md text-center">
-                      ¡A punto de completar!
-                    </div>
-                  )}
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {sortedGroups.map(({ groupName, sections }) => (
+              <div key={groupName} className="bg-white/40 dark:bg-[#0D0D0D]/40 backdrop-blur-md rounded-3xl p-6 border border-[#474A4A]/10 dark:border-white/5 shadow-sm">
+                <div className="flex items-center justify-between mb-4 border-b border-[#474A4A]/10 dark:border-white/10 pb-3">
+                  <h3 className="text-lg font-black text-[#2A398D] dark:text-[#4C5DBB] tracking-tight uppercase italic flex items-center gap-2">
+                    {groupName}
+                  </h3>
+                  <span className="text-xs bg-[#2A398D]/10 dark:bg-[#4C5DBB]/20 text-[#2A398D] dark:text-[#4C5DBB] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {sections.length} {sections.length === 1 ? 'País' : 'Países'}
+                  </span>
                 </div>
-              );
-            })}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {sections.map(([section, data]) => {
+                    const isAlmostComplete = data.missing <= 3;
+                    const isPanama = section.toUpperCase() === 'PANAMA';
+                    
+                    return (
+                      <div key={section} className={`bg-white dark:bg-[#0D0D0D] border p-4 rounded-xl shadow-sm flex flex-col justify-between transition-all hover:scale-105 ${
+                        isPanama ? 'border-[#E61D25] shadow-[#E61D25]/10' :
+                        isAlmostComplete ? 'border-[#3CAC3B]/30' : 'border-[#474A4A]/20 dark:border-white/10'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {getFlagUrl(section) ? (
+                            <img 
+                              src={getFlagUrl(section)!} 
+                              alt={section} 
+                              loading="lazy"
+                              className="w-6 h-6 object-cover rounded-full shadow-sm border border-[#474A4A]/20 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 flex items-center justify-center bg-[#D1D4D1] rounded-full text-xs shadow-sm border border-[#474A4A]/20">🏆</div>
+                          )}
+                          <span className="font-bold text-[#2A398D] dark:text-white/90 text-sm uppercase tracking-wider line-clamp-1">{getSectionDisplayName(section)}</span>
+                        </div>
+                        <div className="flex items-end justify-between mt-2">
+                          <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-medium">Faltan</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className={`text-2xl font-black ${isAlmostComplete ? 'text-[#3CAC3B]' : 'text-[#E61D25]'}`}>
+                              {data.missing}
+                            </span>
+                            <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-bold">/ {data.total}</span>
+                          </div>
+                        </div>
+                        {isAlmostComplete && (
+                          <div className="mt-2 text-[10px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-1 rounded-md text-center">
+                            ¡A punto de completar!
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="bg-white border border-[#3CAC3B]/20 p-8 rounded-2xl text-center shadow-sm">
