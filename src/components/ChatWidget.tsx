@@ -64,6 +64,7 @@ export default function ChatWidget() {
               />
             ) : (
               <ChatList 
+                currentUserId={session.user.id}
                 onSelectChat={(id, user) => setActiveChat({ id, user })}
               />
             )}

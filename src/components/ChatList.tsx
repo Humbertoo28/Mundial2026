@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Circle, Loader2, Search } from 'lucide-react';
 import { getInbox } from '@/app/actions/chat';
 import Image from 'next/image';
@@ -9,17 +9,23 @@ import { supabase } from '@/lib/supabase';
 type Conversation = {
   otherUserId: string;
   otherUser: { username: string; avatar_url: string | null; is_online: boolean; last_seen: string };
-  lastMessage: { content: string; created_at: string; sender_id: string; is_read: boolean };
+  lastMessage: { id?: string; content: string; created_at: string; sender_id: string; is_read: boolean };
 };
 
 type ChatListProps = {
+  currentUserId: string;
   onSelectChat: (userId: string, user: any) => void;
 };
 
-export default function ChatList({ onSelectChat }: ChatListProps) {
+export default function ChatList({ currentUserId, onSelectChat }: ChatListProps) {
   const [inbox, setInbox] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('');
+
+  const inboxRef = useRef(inbox);
+  useEffect(() => {
+    inboxRef.current = inbox;
+  }, [inbox]);
 
   useEffect(() => {
     async function loadInbox() {
@@ -53,10 +59,107 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
       )
       .subscribe();
 
+    // Suscribirse a nuevos mensajes para actualizar la bandeja de entrada
+    const messagesInsertChannel = supabase
+      .channel('messages-insert')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        async (payload) => {
+          const newMessage = payload.new;
+          if (newMessage.sender_id !== currentUserId && newMessage.receiver_id !== currentUserId) {
+            return; // No es relevante para nosotros
+          }
+
+          const otherUserId = newMessage.sender_id === currentUserId ? newMessage.receiver_id : newMessage.sender_id;
+          const exists = inboxRef.current.some(chat => chat.otherUserId === otherUserId);
+
+          if (exists) {
+            // Actualizar el último mensaje y mover al tope
+            setInbox((prev) => {
+              const existingIndex = prev.findIndex(chat => chat.otherUserId === otherUserId);
+              if (existingIndex === -1) return prev;
+
+              const updatedChat = {
+                ...prev[existingIndex],
+                lastMessage: {
+                  id: newMessage.id,
+                  content: newMessage.content,
+                  created_at: newMessage.created_at,
+                  sender_id: newMessage.sender_id,
+                  is_read: newMessage.is_read || false
+                }
+              };
+
+              const newInbox = [...prev];
+              newInbox.splice(existingIndex, 1);
+              return [updatedChat, ...newInbox];
+            });
+          } else {
+            // Cargar el perfil del usuario para agregarlo a la bandeja
+            try {
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('username, avatar_url, is_online, last_seen')
+                .eq('id', otherUserId)
+                .single();
+
+              if (profile && !error) {
+                const newConversation: Conversation = {
+                  otherUserId,
+                  otherUser: {
+                    username: profile.username || 'Usuario',
+                    avatar_url: profile.avatar_url,
+                    is_online: profile.is_online || false,
+                    last_seen: profile.last_seen || new Date().toISOString()
+                  },
+                  lastMessage: {
+                    id: newMessage.id,
+                    content: newMessage.content,
+                    created_at: newMessage.created_at,
+                    sender_id: newMessage.sender_id,
+                    is_read: newMessage.is_read || false
+                  }
+                };
+
+                setInbox((prev) => {
+                  if (prev.some(chat => chat.otherUserId === otherUserId)) return prev;
+                  return [newConversation, ...prev];
+                });
+              }
+            } catch (err) {
+              console.error("Error al cargar perfil de usuario del nuevo chat:", err);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Suscribirse a actualizaciones de lectura de mensajes
+    const messagesUpdateChannel = supabase
+      .channel('messages-update')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        (payload) => {
+          const updatedMessage = payload.new;
+          setInbox((prev) => 
+            prev.map((chat) => 
+              chat.lastMessage.id === updatedMessage.id 
+                ? { ...chat, lastMessage: { ...chat.lastMessage, is_read: updatedMessage.is_read } }
+                : chat
+            )
+          );
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(profileChannel);
+      supabase.removeChannel(messagesInsertChannel);
+      supabase.removeChannel(messagesUpdateChannel);
     };
-  }, []);
+  }, [currentUserId]);
 
   const formatLastSeen = (dateStr?: string) => {
     if (!dateStr) return 'Desconectado';

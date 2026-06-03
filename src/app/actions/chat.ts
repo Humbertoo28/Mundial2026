@@ -107,3 +107,23 @@ export async function updatePresence(isOnline: boolean) {
     })
     .eq('user_id', userId);
 }
+
+export async function markConversationAsRead(otherUserId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "No autenticado" };
+  const userId = session.user.id;
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ is_read: true })
+    .eq('sender_id', otherUserId)
+    .eq('receiver_id', userId)
+    .eq('is_read', false);
+
+  if (error) {
+    console.error("Error al marcar mensajes como leídos:", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}

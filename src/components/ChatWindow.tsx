@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, X, Loader2, Circle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { sendMessage, getConversation } from '@/app/actions/chat';
+import { sendMessage, getConversation, markConversationAsRead } from '@/app/actions/chat';
 import Image from 'next/image';
 
 type Message = {
@@ -34,6 +34,7 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
       try {
         const data = await getConversation(otherUser.id);
         setMessages(data as Message[]);
+        await markConversationAsRead(otherUser.id);
       } catch (err) {
         console.error(err);
       } finally {
@@ -52,8 +53,6 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
         (payload) => {
           // Nota: No podemos actualizar el prop otherUser directamente, 
           // pero podríamos usar un estado local si quisiéramos reflejarlo aquí.
-          // Por simplicidad, el widget se refresca cuando el padre detecta el cambio si se escala,
-          // pero aquí forzamos que se vea la info más reciente si se vuelve a renderizar.
         }
       )
       .subscribe();
@@ -66,18 +65,31 @@ export default function ChatWindow({ currentUser, otherUser, onClose }: ChatWind
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
-          filter: `or(and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherUser.id}),and(sender_id.eq.${otherUser.id},receiver_id.eq.${currentUser.id}))`
+          table: 'messages'
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages((prev) => [...prev, newMessage]);
+          const isRelevant = 
+            (newMessage.sender_id === currentUser.id && newMessage.receiver_id === otherUser.id) ||
+            (newMessage.sender_id === otherUser.id && newMessage.receiver_id === currentUser.id);
+
+          if (isRelevant) {
+            setMessages((prev) => {
+              if (prev.some(m => m.id === newMessage.id)) return prev;
+              return [...prev, newMessage];
+            });
+
+            if (newMessage.sender_id === otherUser.id) {
+              markConversationAsRead(otherUser.id);
+            }
+          }
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
     };
   }, [currentUser.id, otherUser.id]);
 
