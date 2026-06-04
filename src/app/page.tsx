@@ -149,9 +149,8 @@ export default async function Home() {
     });
   }
 
-  // Filter sections that actually have missing stickers
-  const missingBySection = Object.entries(sectionStats)
-    .filter(([_, stats]) => stats.missing > 0);
+  // Check if the album has any missing stickers
+  const hasMissingStickers = Object.values(sectionStats).some(stats => stats.missing > 0);
 
   // Helper to find group information for a section
   const getGroupInfo = (sectionName: string) => {
@@ -179,13 +178,13 @@ export default async function Home() {
     return { groupIndex, teamIndex, groupName: `GRUPO ${group}` };
   };
 
-  // Group missing sections by World Cup group
+  // Group all sections by World Cup group
   const groupedSections: Record<string, {
     groupIndex: number;
     sections: [string, { total: number; missing: number }][];
   }> = {};
 
-  missingBySection.forEach(([section, data]) => {
+  Object.entries(sectionStats).forEach(([section, data]) => {
     const { groupName, groupIndex } = getGroupInfo(section);
     if (!groupedSections[groupName]) {
       groupedSections[groupName] = {
@@ -212,6 +211,7 @@ export default async function Home() {
         sections: sortedSects
       };
     });
+
 
 
   // Build missing stickers list
@@ -421,7 +421,7 @@ export default async function Home() {
           <h2 className="text-2xl font-bold text-[#2A398D]">Faltantes por País</h2>
         </div>
         
-        {missingBySection.length > 0 ? (
+        {hasMissingStickers ? (
           <div className="space-y-8 animate-in fade-in duration-500">
             {sortedGroups.map(({ groupName, sections }) => (
               <div key={groupName} className="bg-white/40 dark:bg-[#0D0D0D]/40 backdrop-blur-md rounded-3xl p-6 border border-[#474A4A]/10 dark:border-white/5 shadow-sm">
@@ -435,12 +435,14 @@ export default async function Home() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {sections.map(([section, data]) => {
-                    const isAlmostComplete = data.missing <= 3;
+                    const isCompleted = data.missing === 0;
+                    const isAlmostComplete = data.missing > 0 && data.missing <= 3;
                     const isPanama = section.toUpperCase() === 'PANAMA';
                     
                     return (
                       <div key={section} className={`bg-white dark:bg-[#0D0D0D] border p-4 rounded-xl shadow-sm flex flex-col justify-between transition-all hover:scale-105 ${
                         isPanama ? 'border-[#E61D25] shadow-[#E61D25]/10' :
+                        isCompleted ? 'border-[#3CAC3B]/20 dark:border-[#3CAC3B]/10 opacity-90' :
                         isAlmostComplete ? 'border-[#3CAC3B]/30' : 'border-[#474A4A]/20 dark:border-white/10'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
@@ -459,17 +461,21 @@ export default async function Home() {
                         <div className="flex items-end justify-between mt-2">
                           <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-medium">Faltan</span>
                           <div className="flex items-baseline gap-1">
-                            <span className={`text-2xl font-black ${isAlmostComplete ? 'text-[#3CAC3B]' : 'text-[#E61D25]'}`}>
+                            <span className={`text-2xl font-black ${isCompleted ? 'text-[#3CAC3B]' : isAlmostComplete ? 'text-[#3CAC3B]' : 'text-[#E61D25]'}`}>
                               {data.missing}
                             </span>
                             <span className="text-xs text-[#474A4A]/60 dark:text-white/40 font-bold">/ {data.total}</span>
                           </div>
                         </div>
-                        {isAlmostComplete && (
+                        {isCompleted ? (
+                          <div className="mt-2 text-[10px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-1 rounded-md text-center">
+                            ¡Completado! 🎉
+                          </div>
+                        ) : isAlmostComplete ? (
                           <div className="mt-2 text-[10px] font-bold text-[#3CAC3B] bg-[#3CAC3B]/10 px-2 py-1 rounded-md text-center">
                             ¡A punto de completar!
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}
